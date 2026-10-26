@@ -2,13 +2,18 @@
 """CI only: builds a test update of the real mobile modpack (version <real>-ci, with one extra override file) and its
 sc-pack.json, served to the emulator from the runner (http://10.0.2.2:8000), to check that a newly published pack is
 applied by itself and keeps the player's options.txt."""
-import hashlib, json, sys, urllib.request, zipfile, os
+import hashlib, json, sys, urllib.request, zipfile, os, shutil
+
+# Cloudflare refuses the default Python user agent (403)
+UA = {"User-Agent": "Mozilla/5.0 (Linux; Android 14) SCLauncherCI"}
+get = lambda url: urllib.request.urlopen(urllib.request.Request(url, headers=UA))
 
 out = sys.argv[1]
 os.makedirs(out, exist_ok=True)
-real = json.load(urllib.request.urlopen("https://descargas.servidorcobblemon.es/movil/sc-pack.json"))
+real = json.load(get("https://descargas.servidorcobblemon.es/movil/sc-pack.json"))
 src = os.path.join(out, "real.mrpack")
-urllib.request.urlretrieve(real["url"], src)
+with get(real["url"]) as r, open(src, "wb") as f:
+    shutil.copyfileobj(r, f)
 version = real["version"] + "-ci"
 dst = os.path.join(out, f"SC-Movil-{version}.mrpack")
 with zipfile.ZipFile(src) as zi, zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as zo:

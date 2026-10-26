@@ -346,6 +346,8 @@ class MainActivity : FCLActivity(), OnSelectListener, View.OnClickListener {
                 // account 步骤仅在没有账户时展示（添加过账户的用户无需引导）
                 val animationSpeed = ThemeEngine.getInstance().getTheme().animationSpeed
                 uiLayout.postDelayed((animationSpeed + 7) * 100L) {
+                    // SC: FCL's walkthrough points at FCL's own buttons, hidden under our screens
+                    if (ScUi.isShowing()) return@postDelayed
                     GuideUtil.show(
                         activity = this@MainActivity,
                         *buildList {

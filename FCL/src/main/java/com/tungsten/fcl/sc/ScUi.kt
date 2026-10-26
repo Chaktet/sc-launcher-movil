@@ -49,6 +49,9 @@ object ScUi {
         (activity.binding.root as ViewGroup).addView(
             wv, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         )
+        // FCL's menus and start button have elevation; ours must sit above every one of them
+        wv.elevation = 1000f
+        wv.translationZ = 1000f
         wv.bringToFront()
         wv.loadUrl(START_URL)
         webView = wv

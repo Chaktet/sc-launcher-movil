@@ -29,6 +29,10 @@
 - **Distribution only from our website** (`descargas.servidorcobblemon.es`), never Google Play. Do not publish the app on
   the web guide `/como-jugar/movil` until the real-phone test (phase 6) passed and Felix says so.
 - Screens: Codex designs (concept images), Felix approves, Claude builds (global CLAUDE.md, «Roles»).
+- **Same design as the current desktop launcher** (Felix, 26-10: «tiene que ser el mismo diseño que el actual, cuidado
+  con eso»): the red PokéNav look of `sc-launcher` (tokens `--pk-*` in `app/assets/css/scpokenav.css`, fonts Silkscreen
+  + Source Sans 3), only re-laid-out for a landscape phone. References = screenshots of the REAL current launcher
+  (take them with `--remote-debugging-port` on an isolated `--user-data-dir`), never old `diseno-*` proposals.
 
 ## Commands
 - CI build: push to any branch → workflow `Build`; artifacts `app-<arch>`.

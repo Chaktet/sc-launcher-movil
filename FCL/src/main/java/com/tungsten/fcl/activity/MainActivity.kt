@@ -62,6 +62,7 @@ import com.tungsten.fcl.setting.Accounts
 import com.tungsten.fcl.setting.ConfigHolder
 import com.tungsten.fcl.setting.Controllers
 import com.tungsten.fcl.setting.Profile
+import com.tungsten.fcl.sc.ScUi
 import com.tungsten.fcl.setting.Profiles
 import com.tungsten.fcl.ui.UIManager
 import com.tungsten.fcl.ui.download.modpack.LocalModpackPage
@@ -397,7 +398,17 @@ class MainActivity : FCLActivity(), OnSelectListener, View.OnClickListener {
         handleNotificationIntent(intent)
         applyPendingOpenDownload()
         setupLiveBackground()
+        // SC: our screens on top of FCL's UI (com.tungsten.fcl.sc.ScUi)
+        ScUi.attach(this)
     }
+
+    /** SC: launches the selected version the same way FCL's start button does. */
+    fun scLaunch() {
+        launchVersion(Profiles.getSelectedVersion())
+    }
+
+    /** SC: true while FCL's own home page is the current page (or before FCL's UI is ready). */
+    fun scIsOnHome(): Boolean = _uiManager?.let { it.currentUI === it.mainUI } ?: true
 
     /** 通知点击进入启动器时，切换到下载页并展开面板 */
     private fun handleNotificationIntent(intent: Intent?) {
@@ -422,6 +433,8 @@ class MainActivity : FCLActivity(), OnSelectListener, View.OnClickListener {
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         if (keyCode == KeyEvent.KEYCODE_BACK) {
+            // SC: our layer handles back first; when it has nothing to close, behave like FCL's home (go to launcher)
+            if (ScUi.onBack(this) { moveTaskToBack(true) }) return true
             _uiManager?.onBackPressed()
             return true
         }
@@ -532,6 +545,7 @@ class MainActivity : FCLActivity(), OnSelectListener, View.OnClickListener {
 
     override fun onDestroy() {
         super.onDestroy()
+        ScUi.detach()
         ThemeEngine.getInstance().removeRefreshListener(themeRefreshListener)
         if (shouldPlayVideo()) {
             mediaPlayer = null

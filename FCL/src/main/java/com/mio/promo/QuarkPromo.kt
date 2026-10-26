@@ -17,6 +17,8 @@ import androidx.core.content.edit
 
 object QuarkPromo {
 
+    private const val SC_NO_PROMO = true
+
     private const val PREF_KEY_NETDISK_URL = "quark_netdisk_url"
 
     /** UpdateChecker 拉取远程 version_map.json 成功后调用，缓存最新网盘链接 */
@@ -34,6 +36,11 @@ object QuarkPromo {
      * 正常中签弹窗，点「打开夸克网盘」跳浏览器并取消本次启动，点「开始游戏」继续启动。
      */
     fun interceptLaunch(activity: FragmentActivity, onProceed: () -> Unit) {
+        // SC: no third-party promotions in SC Launcher
+        if (SC_NO_PROMO) {
+            onProceed()
+            return
+        }
         if (!LocaleUtils.isChinese(activity) || !RegionUtils.isChinaMainlandMachine()) {
             onProceed()
             return

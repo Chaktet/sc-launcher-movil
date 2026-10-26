@@ -48,6 +48,8 @@ class RuntimeFragment : FCLFragment(), View.OnClickListener {
             withContext(Dispatchers.IO) { initState() }
             refreshDrawables()
             check()
+            // SC: unpack the runtimes right away instead of waiting for a tap on «Install»
+            if (!isLatest) onClick(bind.install)
         }
         return view
     }

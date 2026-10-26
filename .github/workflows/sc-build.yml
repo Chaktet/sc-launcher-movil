@@ -15,6 +15,11 @@ on:
 permissions:
   contents: read
 
+# A newer push to the same branch cancels the older run (saves runner minutes)
+concurrency:
+  group: sc-build-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   # sha256 of our release certificate (E:\SECRETOS\sc-launcher-movil\sc-release.jks, alias sc-launcher)
   SC_CERT_SHA256: ed158ccbfb4c2adce848f81ba87f213b29bb4eef85ce3364e6627c797bdc3448
@@ -108,6 +113,10 @@ jobs:
         with:
           name: apk-x86_64
           path: apk
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
 
       - name: Enable KVM
         run: |

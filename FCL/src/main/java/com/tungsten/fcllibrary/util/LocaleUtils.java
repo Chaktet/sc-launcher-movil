@@ -26,6 +26,7 @@ public class LocaleUtils {
      * 9: Japanese
      * 10: Turkish
      * 11: Traditional Chinese (Taiwan)
+     * 12: Spanish (SC)
      */
     public static Locale RUSSIAN = new Locale("ru");
     public static Locale BRAZILIAN_PORTUGUESE = new Locale("pt", "BR");
@@ -36,23 +37,31 @@ public class LocaleUtils {
     public static Locale JAPANESE = new Locale("ja");
     public static Locale TURKISH = new Locale("tr");
     public static Locale TW = new Locale("zh", "TW");
+    // SC: our players speak Spanish, so Spanish is the default until the player picks another language
+    public static Locale SPANISH = new Locale("es", "ES");
+    public static final int SC_DEFAULT_LANG = 12;
 
     private static DateTimeFormatter dateTimeFormatter;
 
     public static boolean isChinese(Context context) {
         SharedPreferences sharedPreferences = context.getSharedPreferences("launcher", Context.MODE_PRIVATE);
-        int lang = sharedPreferences.getInt("lang", 0);
+        int lang = sharedPreferences.getInt("lang", SC_DEFAULT_LANG);
         return lang == 2 || lang == 8 || lang == 11 || (lang == 0 && getSystemLocale().getLanguage().startsWith("zh"));
     }
 
     public static int getLanguage(Context context) {
         SharedPreferences sharedPreferences = context.getSharedPreferences("launcher", Context.MODE_PRIVATE);
-        return sharedPreferences.getInt("lang", 0);
+        return sharedPreferences.getInt("lang", SC_DEFAULT_LANG);
+    }
+
+    public static boolean isSpanish(Context context) {
+        int lang = getLanguage(context);
+        return lang == 12 || (lang == 0 && getSystemLocale().getLanguage().equals("es"));
     }
 
     public static Context setLanguage(Context context) {
         SharedPreferences sharedPreferences = context.getSharedPreferences("launcher", Context.MODE_PRIVATE);
-        return updateResources(context, sharedPreferences.getInt("lang", 0));
+        return updateResources(context, sharedPreferences.getInt("lang", SC_DEFAULT_LANG));
     }
 
     public static void changeLanguage(Context context, int lang) {
@@ -94,6 +103,8 @@ public class LocaleUtils {
                 return TURKISH;
             case 11:
                 return TW;
+            case 12:
+                return SPANISH;
             default:
                 return getSystemLocale();
         }

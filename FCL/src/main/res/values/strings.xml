@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name" translatable="false">Fold Craft Launcher</string>
+    <string name="app_name" translatable="false">SC Launcher</string>
     <string name="app_name_import">Install Modpack</string>
 
     <string name="splash_agreement">FCL requires storage permission to manage and read game files. FCL is fully open-source on GitHub, so please rest assured about your data security. The permission is solely for the game to operate properly and poses no security risks.</string>
@@ -1144,6 +1144,7 @@
     <string name="settings_launcher_language_japanese" translatable="false">日本語</string>
     <string name="settings_launcher_language_turkish" translatable="false">Türkçe</string>
     <string name="settings_launcher_language_traditional_chinese_tw" translatable="false">繁體中文（台灣）</string>
+    <string name="settings_launcher_language_spanish" translatable="false">Español</string>
     <string name="settings_launcher_launcher_log_export">Export launcher logs</string>
     <string name="settings_launcher_launcher_log_export_failed">Unable to export logs</string>
     <string name="settings_launcher_launcher_log_export_success">Logs have been exported to %s</string>
@@ -1553,7 +1554,6 @@
     <string name="jar_executor_warn">Note! This feature is not for installing mods. If you are installing mods, please use the launcher\'s download function or add them in "Manage Mods".</string>
 
     <!-- 原 FCLLibrary 模块字符串（模块已并入 FCL） -->
-    <string name="file_browser_provider" translatable="false">com.tungsten.fcl.provider</string>
     <string name="file_browser_title">File Browser</string>
     <string name="file_browser_back">Back</string>
     <string name="file_browser_close">Exit</string>

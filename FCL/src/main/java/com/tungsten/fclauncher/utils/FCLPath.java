@@ -34,7 +34,9 @@ public class FCLPath {
     public static String SHARE_DIR;
 
     public static String PRIVATE_COMMON_DIR;
-    public static String SHARED_COMMON_DIR = Environment.getExternalStorageDirectory().getAbsolutePath() + "/FCL/.minecraft";
+    // SC: our own shared folder instead of FCL's /FCL, so both apps can be installed without touching each other's data
+    public static final String SC_SHARED_ROOT = Environment.getExternalStorageDirectory().getAbsolutePath() + "/SCLauncher";
+    public static String SHARED_COMMON_DIR = SC_SHARED_ROOT + "/.minecraft";
 
     public static String AUTHLIB_INJECTOR_PATH;
     public static String LIB_PATCHER_PATH;
@@ -46,7 +48,7 @@ public class FCLPath {
     public static void loadPaths(Context context) {
         NATIVE_LIB_DIR = context.getApplicationInfo().nativeLibraryDir;
 
-        LOG_DIR = Environment.getExternalStorageDirectory().getAbsolutePath() + "/FCL/log";
+        LOG_DIR = SC_SHARED_ROOT + "/log";
         CACHE_DIR = context.getCacheDir() + "/fclauncher";
 
         RUNTIME_DIR = context.getDir("runtime", 0).getAbsolutePath();
@@ -66,8 +68,8 @@ public class FCLPath {
         PLUGIN_DIR = FILES_DIR + "/plugins";
         BACKGROUND_DIR = FILES_DIR + "/background";
         SKIN_DIR = FILES_DIR + "/skin";
-        CONTROLLER_DIR = Environment.getExternalStorageDirectory().getAbsolutePath() + "/FCL/control";
-        SHARE_DIR = Environment.getExternalStorageDirectory().getAbsolutePath() + "/FCL/share";
+        CONTROLLER_DIR = SC_SHARED_ROOT + "/control";
+        SHARE_DIR = SC_SHARED_ROOT + "/share";
         File externalFilesDir = context.getExternalFilesDir(null);
         if (externalFilesDir == null) {
             externalFilesDir = new File(Environment.getExternalStorageDirectory(), "Android/data/" + context.getPackageName() + "/files");

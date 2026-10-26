@@ -17,7 +17,6 @@
  */
 package com.tungsten.fcl.game;
 
-import android.os.Environment;
 
 import com.tungsten.fcl.setting.Profile;
 import com.tungsten.fclcore.task.Task;
@@ -45,7 +44,7 @@ public class ManuallyCreatedModpackInstallTask extends Task<Path> {
 
     @Override
     public void execute() throws Exception {
-        Path dest = Paths.get(Environment.getExternalStorageDirectory().getAbsolutePath() + "/FCL").resolve(name);
+        Path dest = Paths.get(com.tungsten.fclauncher.utils.FCLPath.SC_SHARED_ROOT).resolve(name);
         setResult(dest);
         String fileName = zipFile.getFileName().toString().toLowerCase();
         if (fileName.endsWith(".7z")) {

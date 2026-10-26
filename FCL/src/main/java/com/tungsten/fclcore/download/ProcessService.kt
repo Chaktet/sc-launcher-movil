@@ -5,7 +5,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
-import android.os.Environment
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
@@ -63,7 +62,7 @@ class ProcessService : Service() {
         val jre = "jre$java"
         val config = FCLConfig(
             applicationContext,
-            Environment.getExternalStorageDirectory().absolutePath + "/FCL/log",
+            com.tungsten.fclauncher.utils.FCLPath.SC_SHARED_ROOT + "/log",
             applicationContext.getDir("runtime", 0).absolutePath + "/java/" + jre,
             applicationContext.cacheDir.toString() + "/fclauncher",
             Renderer(

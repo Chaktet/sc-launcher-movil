@@ -106,7 +106,7 @@ public final class FCLGameLauncher extends DefaultLauncher {
             try {
                 RuntimeUtils.copyAssets(context, "options.txt", optionsFile.getAbsolutePath());
                 gameOption = new GameOption(optionsFile.getParent());
-                gameOption.set("lang", LocaleUtils.isChinese(context) ? "zh_cn" : "en_us");
+                gameOption.set("lang", LocaleUtils.isChinese(context) ? "zh_cn" : LocaleUtils.isSpanish(context) ? "es_es" : "en_us");
             } catch (IOException e) {
                 Logging.LOG.log(Level.WARNING, "Unable to generate options.txt", e);
             }

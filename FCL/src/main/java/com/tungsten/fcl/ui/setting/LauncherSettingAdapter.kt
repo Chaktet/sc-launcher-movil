@@ -134,7 +134,8 @@ class LauncherSettingAdapter(
             context.getString(R.string.settings_launcher_language_traditional_chinese_hk),
             context.getString(R.string.settings_launcher_language_japanese),
             context.getString(R.string.settings_launcher_language_turkish),
-            context.getString(R.string.settings_launcher_language_traditional_chinese_tw)
+            context.getString(R.string.settings_launcher_language_traditional_chinese_tw),
+            context.getString(R.string.settings_launcher_language_spanish)
         )
         val themeModeList = listOf(
             context.getString(R.string.settings_launcher_theme_mode_follow),

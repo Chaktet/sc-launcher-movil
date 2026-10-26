@@ -72,7 +72,8 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.tungsten.fcl"
+        // SC: our own id, so the app installs next to FoldCraftLauncher without replacing it
+        applicationId = "es.servidorcobblemon.movil"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 1342
@@ -90,17 +91,20 @@ android {
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
+            // same as the FileProvider authority ${applicationId}.provider in the manifest
+            resValue("string", "file_browser_provider", "es.servidorcobblemon.movil.provider")
             signingConfig = signingConfigs.findByName("ScRelease")
         }
         getByName("debug") {
             // SC: default Android debug key of the build machine, never our release key
             isMinifyEnabled = false
+            resValue("string", "file_browser_provider", "es.servidorcobblemon.movil.provider")
         }
         create("fordebug") {
             initWith(getByName("debug"))
             applicationIdSuffix = ".debug"
             // 与 FileProvider authority（${applicationId}.provider）保持一致（原 FCLLibrary 模块的 resValue）
-            resValue("string", "file_browser_provider", "com.tungsten.fcl.debug.provider")
+            resValue("string", "file_browser_provider", "es.servidorcobblemon.movil.debug.provider")
         }
         configureEach {
             resValue("string", "app_version", defaultConfig.versionName.toString())

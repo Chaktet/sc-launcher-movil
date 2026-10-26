@@ -40,7 +40,6 @@ android {
         localProperty = Properties()
         file("${rootDir}/local.properties").inputStream().use { localProperty.load(it) }
     }
-    val pwd = System.getenv("FCL_KEYSTORE_PASSWORD") ?: localProperty?.getProperty("pwd")
     val curseApiKey = System.getenv("CURSE_API_KEY") ?: localProperty?.getProperty("curse.api.key")
     val oauthApiKey = System.getenv("OAUTH_API_KEY") ?: localProperty?.getProperty("oauth.api.key")
     // 命令行 -Darch 优先；local.properties 仅在命令行未指定时生效
@@ -51,18 +50,18 @@ android {
     )
         System.setProperty("arch", "arm64")
 
+    // SC: release builds are signed only with our own key, decoded by CI from secrets into SC_KEYSTORE_FILE.
+    // FCL's keystores were removed from the repo; without our key a release build stays unsigned on purpose.
+    val scKeystore = System.getenv("SC_KEYSTORE_FILE")?.let { file(it) }?.takeIf { it.exists() }
+    val scKeystorePassword = System.getenv("SC_KEYSTORE_PASSWORD")
     signingConfigs {
-        create("FCLKey") {
-            storeFile = file("../key-store.jks")
-            storePassword = pwd
-            keyAlias = "FCL-Key"
-            keyPassword = pwd
-        }
-        create("FCLDebugKey") {
-            storeFile = file("../debug-key.jks")
-            storePassword = "FCL-Debug"
-            keyAlias = "FCL-Debug"
-            keyPassword = "FCL-Debug"
+        if (scKeystore != null && scKeystorePassword != null) {
+            create("ScRelease") {
+                storeFile = scKeystore
+                storePassword = scKeystorePassword
+                keyAlias = "sc-launcher"
+                keyPassword = scKeystorePassword
+            }
         }
         // minSdk 26 ≥ 24，v1 已无必要，统一启用 v2 + v3 签名方案
         configureEach {
@@ -91,16 +90,15 @@ android {
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("FCLKey")
+            signingConfig = signingConfigs.findByName("ScRelease")
         }
         getByName("debug") {
+            // SC: default Android debug key of the build machine, never our release key
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("FCLKey")
         }
         create("fordebug") {
             initWith(getByName("debug"))
             applicationIdSuffix = ".debug"
-            signingConfig = signingConfigs.getByName("FCLDebugKey")
             // 与 FileProvider authority（${applicationId}.provider）保持一致（原 FCLLibrary 模块的 resValue）
             resValue("string", "file_browser_provider", "com.tungsten.fcl.debug.provider")
         }

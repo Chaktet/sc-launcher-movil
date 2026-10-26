@@ -35,3 +35,8 @@ AGENTS.md
 /.zcode/
 .kotlin/
 .zcodeignore
+
+# SC: never commit signing keys
+*.jks
+*.keystore
+*.pepk

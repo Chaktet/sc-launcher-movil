@@ -1,0 +1,134 @@
+# SC Launcher Móvil · build, sign and smoke-test the APKs.
+# Signing secrets are only exposed on pushes to main, version tags and manual runs on main: never on pull requests
+# (forks' PRs get no secrets anyway, and we never use pull_request_target). Other branches build unsigned release
+# APKs plus a debug-signed one for the emulator test.
+name: SC Build
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+    paths-ignore: ["**.md", "version_map.json"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # sha256 of our release certificate (E:\SECRETOS\sc-launcher-movil\sc-release.jks, alias sc-launcher)
+  SC_CERT_SHA256: ed158ccbfb4c2adce848f81ba87f213b29bb4eef85ce3364e6627c797bdc3448
+
+jobs:
+  build:
+    name: Build ${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: ["arm64", "arm", "x86_64"]
+    env:
+      TRUSTED: ${{ github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - name: Decode release key (trusted refs only)
+        if: env.TRUSTED == 'true'
+        env:
+          SC_KEYSTORE_BASE64: ${{ secrets.SC_KEYSTORE_BASE64 }}
+        run: |
+          echo "$SC_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/sc-release.jks"
+          echo "SC_KEYSTORE_FILE=$RUNNER_TEMP/sc-release.jks" >> "$GITHUB_ENV"
+
+      - name: Build release APK
+        env:
+          SC_KEYSTORE_PASSWORD: ${{ env.TRUSTED == 'true' && secrets.SC_KEYSTORE_PASSWORD || '' }}
+          OAUTH_API_KEY: ${{ secrets.OAUTH_API_KEY }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease -Darch=${{ matrix.arch }} --no-daemon
+          rm -f "$RUNNER_TEMP/sc-release.jks"
+
+      - name: Build debug APK for the emulator test
+        if: matrix.arch == 'x86_64'
+        env:
+          OAUTH_API_KEY: ${{ secrets.OAUTH_API_KEY }}
+        run: ./gradlew assembleDebug -Darch=x86_64 --no-daemon
+
+      - name: Check signature and package
+        run: |
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          for apk in FCL/build/outputs/apk/*/*.apk; do
+            echo "== $apk ($(du -h "$apk" | cut -f1))"
+            "$BT/aapt2" dump badging "$apk" | grep -E "^package:" || true
+            if "$BT/apksigner" verify --print-certs "$apk" > certs.txt 2>&1; then
+              grep -i "SHA-256" certs.txt
+              case "$apk" in
+                */release/*)
+                  grep -qi "SHA-256 digest: $SC_CERT_SHA256" certs.txt \
+                    || { echo "::error::$apk is NOT signed with our release key"; exit 1; } ;;
+                *)
+                  if grep -qi "SHA-256 digest: $SC_CERT_SHA256" certs.txt; then
+                    echo "::error::debug APK signed with the release key"; exit 1; fi ;;
+              esac
+            else
+              case "$apk" in
+                */release/*)
+                  if [ "$TRUSTED" = "true" ]; then echo "::error::release APK unsigned on a trusted ref"; exit 1; fi
+                  echo "unsigned (expected on untrusted refs)" ;;
+                *) cat certs.txt; exit 1 ;;
+              esac
+            fi
+          done
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: apk-${{ matrix.arch }}
+          path: FCL/build/outputs/apk/*/*.apk
+          retention-days: 14
+
+  emulator:
+    name: Emulator smoke test (x86_64)
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: .github/scripts
+
+      - uses: actions/download-artifact@v6
+        with:
+          name: apk-x86_64
+          path: apk
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Install and launch in the emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          script: bash .github/scripts/sc-smoke.sh
+
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: emulator-evidence
+          path: |
+            evidence/
+          retention-days: 14

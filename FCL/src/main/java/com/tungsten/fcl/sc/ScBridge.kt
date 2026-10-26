@@ -76,6 +76,7 @@ class ScBridge(private val activity: MainActivity, private val webView: WebView)
         o.put("renderers", renderers)
         o.put("renderer", s.renderer)
         o.put("idioma", LocaleUtils.getLanguage(activity))
+        o.put("pack", ScPack.installedVersion(activity) ?: "")
         o.toString()
     }
 
@@ -130,22 +131,17 @@ class ScBridge(private val activity: MainActivity, private val webView: WebView)
         }
     }
 
+    /** Installs/updates the server modpack when needed (ScPack), then launches straight into the server. */
     @JavascriptInterface
     fun jugar() {
-        main.post {
-            if (Profiles.getSelectedVersion() == null) {
-                // Phase 3 installs and selects the server modpack automatically before this point.
-                ScUi.js("scApp.error('Falta el juego', 'Todavía no está instalado el modpack del servidor.')")
-                return@post
-            }
-            activity.scLaunch()
-        }
+        if (onMain { Accounts.getSelectedAccount() } == null) return
+        ScPack.playWhenReady(activity)
     }
 
+    /** Checks every modpack file against its hash and downloads again the broken ones. */
     @JavascriptInterface
     fun reparar() {
-        // Phase 3: re-verify every modpack file (hashes) and download the broken ones.
-        ScUi.js("scApp.dialogo('Reparar archivos', 'La reparación llega con el modpack automático.', '', 'Entendido', '')")
+        ScPack.playWhenReady(activity, forceRepair = true)
     }
 
     @JavascriptInterface
@@ -178,6 +174,16 @@ class ScBridge(private val activity: MainActivity, private val webView: WebView)
                 }
             }
         }
+    }
+
+    /** Debug builds only (CI): writes the test switches ScPack reads (debug_manifest_url, debug_no_launch). */
+    @JavascriptInterface
+    fun debug(clave: String, valor: String) {
+        if ((activity.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) == 0) return
+        if (clave !in setOf("debug_manifest_url", "debug_no_launch")) return
+        val e = activity.getSharedPreferences("sc", android.content.Context.MODE_PRIVATE).edit()
+        if (clave == "debug_no_launch") e.putBoolean(clave, valor == "1") else e.putString(clave, valor)
+        e.apply()
     }
 
     @JavascriptInterface

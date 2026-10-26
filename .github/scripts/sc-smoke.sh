@@ -60,6 +60,9 @@ adb shell screencap -p /sdcard/s.png && adb pull /sdcard/s.png evidence/debug-0-
 PID=$(adb shell pidof "$PKG" | tr -d '\r')
 [ -n "$PID" ] || { echo "::error::debug app not running"; adb logcat -d > evidence/debug-logcat.txt; exit 1; }
 adb forward tcp:9222 "localabstract:webview_devtools_remote_$PID"
+# Test update of the modpack, served from the runner (the emulator reaches the host at 10.0.2.2)
+python3 .github/scripts/sc-pack-ci.py packci && (cd packci && python3 -m http.server 8000 >/dev/null 2>&1 &)
+sleep 2
 node .github/scripts/sc-ui-check.mjs "$PKG" || FALLO=1
 adb logcat -d > evidence/debug-logcat.txt
 if grep -A3 "FATAL EXCEPTION" evidence/debug-logcat.txt | grep -q "$PKG"; then

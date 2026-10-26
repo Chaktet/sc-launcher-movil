@@ -54,6 +54,7 @@
     $('avatarCabeza').hidden = false
     $('verBadge').textContent = 'v' + (estado.versionApp || '')
     $('verApp').textContent = estado.versionApp || ''
+    $('perfilDetalle').textContent = estado.pack ? ('Modpack ' + estado.pack) : 'Se instala al pulsar JUGAR'
     pintarAjustes()
     mostrar('vInicio')
   }
@@ -195,7 +196,7 @@
       const v = pct < 0 ? 100 : Math.max(0, Math.min(100, pct))
       $('progRelleno').style.width = v + '%'; $('progPct').textContent = pct < 0 ? '' : Math.round(v) + '%'
     },
-    listo() { $('zonaJugar').hidden = false; $('zonaProgreso').hidden = true },
+    listo() { $('zonaJugar').hidden = false; $('zonaProgreso').hidden = true; pintarCuenta() },
     error(titulo, texto) { this.listo(); $('errTitulo').textContent = titulo; $('errTexto').textContent = texto || ''; $('avisoError').hidden = false },
     dialogo(titulo, texto, no, si, accion) { dialogo(titulo, texto, no, si, accion ? () => SC.accion(accion) : null) },
     atras() { // Android back button: close dialog / go back inside our screens; returns true if handled

@@ -239,6 +239,10 @@ comprueba(errores.length === 0, `no JS errors (${errores.length})`)
 
 // Real launch: the game process starts with quickPlay to our server. The emulator has no real GPU, so reaching the
 // server is only reported (it is checked on real phones in phase 6); the launch itself must happen.
+// Quick test on every version; the long one (this phase + the game watched 20 min) by hand or on Sundays (SC_PRUEBA)
+const COMPLETA = process.env.SC_PRUEBA === 'completa'
+informe.push('INFO ' + `emulator test: ${COMPLETA ? 'completa' : 'rapida'}`)
+if (COMPLETA) {
 // ---- Phase 6: the two phone modpacks. PRO is installed over the light one, the light one back (PRO's mods must go),
 // and the game below runs PRO, which tells which of its mods start on Android. ----
 const PRO = 'https://descargas.servidorcobblemon.es/movil/sc-pack-pro.json'
@@ -278,6 +282,7 @@ comprueba(adb('cat', `'${run}/options.txt'`).includes('sc_ci_option:1'), "the pl
 await elige('pro')
 await ev(`document.getElementById('btnJugar').click()`)
 comprueba(await esperaPack(pro.version, 20, 'ui-10-pro-otra-vez'), 'PRO again, for the game check')
+}
 
 await ev(`SC.debug('debug_no_launch', '0')`)
 // The game stops at its title screen: the menus are checked there, and the CI test account never joins the real server
@@ -297,15 +302,16 @@ let caida = logcat().match(/Incompatible mods found|Mod discovery failed|Error a
 comprueba(!caida, `the game is still running 60 s after JUGAR (Fabric found the mods)${caida ? ': ' + [...new Set(caida)].join(' · ') : ''}`)
 // Loading on a phone-sized screen: a screenshot every minute shows when the title screen is ready and how it looks
 const tiempos = []
-for (let m = 1; m <= 20 && !caida; m++) {
+const minutos = COMPLETA ? 20 : 0
+for (let m = 1; m <= minutos && !caida; m++) {
   shot(`ui-9-juego-${String(m).padStart(2, '0')}min`)
   const l = leeLog()
   tiempos.push(`${m} min: ${l.split('\n').filter(Boolean).length} lines, last: ${(l.trim().split('\n').pop() || '').slice(0, 160)}`)
   writeFileSync('evidence/juego-tiempos.txt', tiempos.join('\n') + '\n')
-  if (m < 20) await sleep(60000)
+  if (m < minutos) await sleep(60000)
   caida = logcat().match(/OpenJDK exited with code : \d+|Incompatible mods found|Mod discovery failed|Mixin apply failed|crashed!/g)
 }
-comprueba(!caida, `Móvil PRO keeps running on Android while it loads (no mod crashed)${caida ? ': ' + [...new Set(caida)].join(' · ') : ''}`)
+if (COMPLETA) comprueba(!caida, `Móvil PRO keeps running on Android while it loads (no mod crashed)${caida ? ': ' + [...new Set(caida)].join(' · ') : ''}`)
 writeFileSync('evidence/juego-latest.log', leeLog() + '\n')
 const lc = logcat()
 writeFileSync('evidence/juego-ventana.txt', (lc.match(/.*(--width|--height|windowScale|Window size|setScaleFactor|\d{3,4}x\d{3,4}).*/g) || []).filter((l) => /tungsten|fcl|Bridge|JVM|width/i.test(l)).slice(0, 60).join('\n') + '\n')

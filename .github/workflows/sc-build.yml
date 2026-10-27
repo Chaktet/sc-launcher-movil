@@ -10,7 +10,17 @@ on:
     tags: ["v*"]
     paths-ignore: ["**.md", "version_map.json"]
   pull_request:
+  # Felix 27-10: every version gets the quick emulator test (~25 min); the long one (Móvil PRO switch + the game watched
+  # 20 min, ~1 h 45 min) runs by hand when mod installs or profiles change, and every Sunday
   workflow_dispatch:
+    inputs:
+      prueba:
+        description: "Emulator test: rapida or completa"
+        type: choice
+        options: [rapida, completa]
+        default: rapida
+  schedule:
+    - cron: "0 9 * * 0"
 
 permissions:
   contents: read
@@ -23,6 +33,7 @@ concurrency:
 env:
   # sha256 of our release certificate (E:\SECRETOS\sc-launcher-movil\sc-release.jks, alias sc-launcher)
   SC_CERT_SHA256: ed158ccbfb4c2adce848f81ba87f213b29bb4eef85ce3364e6627c797bdc3448
+  SC_PRUEBA: ${{ github.event_name == 'schedule' && 'completa' || inputs.prueba || 'rapida' }}
 
 jobs:
   build:

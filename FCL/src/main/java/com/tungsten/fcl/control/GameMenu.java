@@ -966,7 +966,8 @@ public class GameMenu implements MenuCallback, FCLBridgeCallback {
     @Override
     public void onExit(int exitCode) {
         if (exitCode != 0 && fclBridge != null) {
-            JVMCrashActivity.startCrashActivity(true, activity, exitCode, fclBridge.getLogPath());
+            // SC: our error screen in the app (ScCierre) instead of FCL's crash activity
+            com.tungsten.fcl.sc.ScCierre.alSalir(activity, exitCode, fclBridge.getLogPath());
             Logging.LOG.log(Level.INFO, "JVM crashed, start jvm crash activity to show errors now!");
         }
         android.os.Process.killProcess(android.os.Process.myPid());

@@ -111,6 +111,26 @@
           </div>
         </div>
       </div>
+      <!-- The game closed with an error (Codex design 27-10, approved): replaces FCL's crash screen -->
+      <div class="panelP" id="pCierre" hidden>
+        <div id="cierreCuerpo" class="sc2Frame">
+          <div id="cierreCab">
+            <span class="icoAviso grande" aria-hidden="true"></span>
+            <h1 class="pixel" id="cierreTitulo">El juego se cerró inesperadamente</h1>
+            <span id="cierreCodigo" class="chipCodigo">SC-45</span>
+          </div>
+          <p id="cierreTexto"></p>
+          <div id="cierreBotones">
+            <button id="btnCierreJugar" type="button"><span>Volver a jugar</span></button>
+            <div class="cierreInforme">
+              <button id="btnCierreInforme" class="btn btnIcono" type="button">Enviar informe</button>
+              <small id="cierreInformeNota">El informe se envía de forma anónima.</small>
+            </div>
+            <button id="btnCierreDetalles" class="enlace" type="button">Ver detalles</button>
+          </div>
+          <pre id="cierreDetalles" hidden></pre>
+        </div>
+      </div>
       <!-- Jugar -->
       <div class="panelP" id="pJugar">
         <div id="heroe" class="sc2Frame">

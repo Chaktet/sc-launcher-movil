@@ -193,6 +193,12 @@
             android:authorities="${applicationId}.crashreporterinitprovider"
             android:exported="false"
             android:initOrder="101" />
+        <!-- SC: reopens the app after the game closed with an error (ScCierre); separate process survives the kill -->
+        <activity
+            android:name=".sc.ScReabrir"
+            android:exported="false"
+            android:process=":crash"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
         <!-- SC: reopens the app after it updated itself (ScAppUpdate); MY_PACKAGE_REPLACED is a protected broadcast -->
         <receiver
             android:name=".sc.ScActualizada"

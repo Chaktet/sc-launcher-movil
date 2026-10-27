@@ -20,12 +20,14 @@ import java.util.logging.Level
  */
 object ScAvisos {
     // Phone codes (ERRORES.md): SC-40 install/update of the modpack failed, SC-41 a download stopped (0 B/s for 3 min),
-    // SC-42 «Reparar archivos» failed, SC-43 unexpected error preparing the game, SC-44 no space on the phone
+    // SC-42 «Reparar archivos» failed, SC-43 unexpected error preparing the game, SC-44 no space on the phone,
+    // SC-45 the game closed with an error (player pressed «Enviar informe»)
     const val INSTALAR = "SC-40"
     const val DESCARGA_PARADA = "SC-41"
     const val REPARAR = "SC-42"
     const val INESPERADO = "SC-43"
     const val SIN_ESPACIO = "SC-44"
+    const val CIERRE = "SC-45" // the game closed with an error, sent from the error screen («Enviar informe»)
 
     private const val PREFS = "sc"
     private const val KEY_ENVIAR = "enviar_errores"

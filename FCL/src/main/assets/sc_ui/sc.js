@@ -248,6 +248,26 @@
   $('btnCargaCancelar').onclick = () => { $('btnCargaCancelar').textContent = 'Cancelando…'; $('btnCargaCancelar').disabled = true; SC.cancelarCarga && SC.cancelarCarga() }
   $('btnCargaReintentar').onclick = () => { carga.reintentar = true; SC.cancelarCarga && SC.cancelarCarga() }
 
+  // ---- The game closed with an error (ScCierre): our screen instead of FCL's crash activity ----
+  let cierre = null
+  function muestraCierre(j) {
+    cierre = j
+    document.body.classList.add('cerrado')
+    for (const id of ['pJugar', 'pEventos', 'pNovedades', 'pAjustes', 'pCarga']) $(id).hidden = true
+    $('pCierre').hidden = false
+    $('cierreTexto').textContent = j.texto || ''
+    $('cierreDetalles').textContent = (j.detalles || '') + (j.codigo != null ? '\nCódigo de salida: ' + j.codigo : '')
+    $('cierreDetalles').hidden = true
+    $('btnCierreInforme').disabled = false; $('btnCierreInforme').textContent = 'Enviar informe'
+  }
+  function cierraCierre() { document.body.classList.remove('cerrado'); $('pCierre').hidden = true; pestana('jugar') }
+  $('btnCierreJugar').onclick = () => { cierraCierre(); $('btnJugar').click() }
+  $('btnCierreInforme').onclick = () => {
+    if (cierre && SC.enviarInformeCierre) SC.enviarInformeCierre(cierre.causa || 'otro', String(cierre.codigo))
+    $('btnCierreInforme').disabled = true; $('btnCierreInforme').textContent = 'Informe enviado'
+  }
+  $('btnCierreDetalles').onclick = () => { $('cierreDetalles').hidden = !$('cierreDetalles').hidden }
+
   // ---- Called from Java ----
   window.scApp = {
     respuesta(id, ok, texto) { const p = pendientes.get(String(id)); if (!p) return; pendientes.delete(String(id)); ok ? p.ok(texto) : p.mal(new Error(texto)) },
@@ -278,6 +298,7 @@
         cuenta: j.total > 0 ? j.hechos.toLocaleString('es-ES') + ' de ' + j.total.toLocaleString('es-ES') + ' archivos' : '',
         bps: j.bps || 0, restante: j.restante, descarga, cancelable: true })
     },
+    cierre(j) { muestraCierre(j) },
     cargaFin(ok) {
       $('btnCargaCancelar').textContent = 'Cancelar'; $('btnCargaCancelar').disabled = false
       const otraVez = carga.reintentar; carga.reintentar = false
@@ -297,6 +318,8 @@
 
   pintarCuenta()
   cargarEstado(); cargarNovedades()
+  // the game closed with an error last time: show what happened (once)
+  try { const c = SC.cierrePendiente ? SC.cierrePendiente() : ''; if (c) muestraCierre(JSON.parse(c)) } catch (e) {}
   // a newer app on our website: checked at start, when coming back to the app and every 30 min (Wi-Fi: installs by itself)
   if (SC.buscarActualizacion) {
     SC.buscarActualizacion()

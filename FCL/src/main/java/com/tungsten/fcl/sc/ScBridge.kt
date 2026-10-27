@@ -221,6 +221,16 @@ class ScBridge(private val activity: MainActivity, private val webView: WebView)
         }
     }
 
+    /** At start: the game closed with an error last time? ({codigo, causa, texto, detalles} once, or "") */
+    @JavascriptInterface
+    fun cierrePendiente(): String = ScCierre.pendiente(activity)
+
+    /** «Enviar informe» of the error screen: anonymous SC-45 with the cause key and the exit code. */
+    @JavascriptInterface
+    fun enviarInformeCierre(causa: String, codigo: String) {
+        ScAvisos.enviar(activity, ScAvisos.CIERRE, mapOf("n" to causa, "x" to codigo))
+    }
+
     /** «Cancelar» on the preparing screen (FCL launch steps). */
     @JavascriptInterface
     fun cancelarCarga() { ScCarga.cancelar() }

@@ -149,9 +149,14 @@ await ev(`SC.debug('debug_manifest_url', '')`)
 // repair: a broken mod is detected by its hash and downloaded again
 const victima = mods.find((m) => m.startsWith('Cobblemon-fabric-'))
 adb('sh', '-c', `"echo roto > '${run}/mods/${victima}'"`)
+await ev(`document.getElementById('velo').hidden = true`)
 await ev(`SC.reparar()`)
 let reparado = false
-for (let s = 0; s < 600 && !reparado; s += 5) { await sleep(5000); reparado = await visible('#velo') }
+for (let s = 0; s < 600 && !reparado; s += 5) {
+  await sleep(5000)
+  reparado = await visible('#velo') && (await ev(`document.getElementById('dlgTitulo').textContent`)) === 'Reparar archivos'
+  if (!reparado && await visible('#avisoError')) { informe.push('     error card: ' + await ev(`document.getElementById('errTitulo').textContent + ' · ' + document.getElementById('errTexto').textContent`)); break }
+}
 const tam = Number(adb('stat', '-c', '%s', `'${run}/mods/${victima}'`))
 comprueba(reparado && tam > 1_000_000, `«Reparar archivos» restores a broken mod (${victima}: ${tam} bytes)`)
 shot('ui-8-reparado')

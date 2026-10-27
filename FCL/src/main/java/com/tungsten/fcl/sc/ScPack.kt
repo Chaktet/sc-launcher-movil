@@ -43,6 +43,7 @@ object ScPack {
     private val ALLOWED_PACK_HOSTS = setOf("descargas.servidorcobblemon.es")
     private val ALLOWED_FILE_HOSTS = setOf("cdn.modrinth.com", "descargas.servidorcobblemon.es")
     private val OVERRIDE_DIRS = listOf("overrides/", "client-overrides/")
+    private val PACK_OPTION_KEYS = setOf("resourcePacks", "incompatibleResourcePacks")
 
     private val running = AtomicBoolean(false)
 
@@ -72,8 +73,8 @@ object ScPack {
                 val noLaunch = debugPrefs(activity)?.getBoolean("debug_no_launch", false) == true
                 Schedulers.androidUIThread().execute {
                     ScUi.js("scApp.listo()")
-                    if (!forceRepair && !noLaunch) activity.scLaunch()
-                    else ScUi.js("scApp.dialogo('Reparar archivos', 'Todos los archivos están bien.', '', 'Entendido', '')")
+                    if (forceRepair) ScUi.js("scApp.dialogo('Reparar archivos', 'Todos los archivos están bien.', '', 'Entendido', '')")
+                    else if (!noLaunch) activity.scLaunch()
                 }
             } catch (e: ScError) {
                 ScUi.js("scApp.error(${JSONObject.quote(e.titulo)}, ${JSONObject.quote(e.texto)})")
@@ -92,7 +93,8 @@ object ScPack {
         if (!repo.isLoaded) repo.refreshVersions()
         ui("Comprobando el modpack…", -1)
 
-        val manifest = runCatching { fetchManifest(debugPrefs(activity)?.getString("debug_manifest_url", null)) }.getOrElse {
+        val debugUrl = debugPrefs(activity)?.getString("debug_manifest_url", null)?.takeIf { it.isNotBlank() }
+        val manifest = runCatching { fetchManifest(debugUrl) }.getOrElse {
             Logging.LOG.log(Level.WARNING, "SC pack: manifest not reachable", it)
             null
         }
@@ -100,6 +102,7 @@ object ScPack {
         val hasInstance = repo.hasVersion(INSTANCE)
 
         if (manifest == null) {
+            if (forceRepair) throw ScError("Sin conexión", "Hace falta internet para comprobar y reparar los archivos.")
             // Offline: playing is still possible with what is installed (the server will say if it is too old).
             if (hasInstance && installed != null) { selectAndConfigure(); return }
             throw ScError("Sin conexión", "Hace falta internet para descargar el modpack la primera vez.")
@@ -107,14 +110,35 @@ object ScPack {
 
         if (!hasInstance || installed != manifest.version) {
             val mrpack = download(manifest)
+            val runDir = repo.getRunDirectory(INSTANCE)
+            val playerOptions = if (hasInstance) readOptions(File(runDir, "options.txt")) else null
             install(profile, mrpack, update = hasInstance)
-            verifyFiles(mrpack, repo.getRunDirectory(INSTANCE))
+            verifyFiles(mrpack, runDir)
+            playerOptions?.let { mergeOptions(File(runDir, "options.txt"), it) }
             activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY_VERSION, manifest.version).apply()
             File(FCLPath.CACHE_DIR).listFiles { f -> f.name.startsWith("sc-pack-") }?.forEach { if (it != mrpack) it.delete() }
         } else if (forceRepair) {
             verifyFiles(download(manifest), repo.getRunDirectory(INSTANCE))
         }
         selectAndConfigure()
+    }
+
+    /** options.txt as ordered key → line ("key:value"), or null when there is none. */
+    private fun readOptions(f: File): LinkedHashMap<String, String>? {
+        if (!f.isFile) return null
+        val m = LinkedHashMap<String, String>()
+        f.readLines(StandardCharsets.UTF_8).forEach { l -> l.substringBefore(':', "").takeIf { it.isNotEmpty() }?.let { m[it] = l } }
+        return m
+    }
+
+    /**
+     * A pack update ships its own options.txt; the player's settings (keys, video, sound, language…) are kept on top
+     * of it. Only the resource pack lists come from the pack, so a new pack order still applies.
+     */
+    private fun mergeOptions(f: File, player: Map<String, String>) {
+        val fromPack = readOptions(f) ?: LinkedHashMap()
+        for ((k, line) in player) if (k !in PACK_OPTION_KEYS) fromPack[k] = line
+        f.writeText(fromPack.values.joinToString("\n", postfix = "\n"), StandardCharsets.UTF_8)
     }
 
     private fun fetchManifest(debugUrl: String?): Manifest {

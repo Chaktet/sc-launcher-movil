@@ -43,16 +43,14 @@ class GameItemBar @JvmOverloads constructor(
     fun setup(gameMenu: GameMenu, gameOption: GameOption) {
         this.gameMenu = gameMenu
         this.gameOption = gameOption
-        val width =
-            (gameMenu.touchPad.width * gameMenu.bridge!!.scaleFactor).toInt()
-        val height =
-            (gameMenu.touchPad.height * gameMenu.bridge!!.scaleFactor).toInt()
-        val autoSize = gameOption.getGuiScale(
-            width,
-            height,
-            0
-        )
         optionListener = GameOptionListener { manually: Boolean ->
+            // SC: computed on every change, not once at setup: at setup the touch pad has no size yet (0 x 0), which
+            // gave GUI scale 1 and a tiny bar where tapping the hotbar slots never hit (Felix 27-10)
+            val width =
+                (gameMenu.touchPad.width * gameMenu.bridge!!.scaleFactor).toInt()
+            val height =
+                (gameMenu.touchPad.height * gameMenu.bridge!!.scaleFactor).toInt()
+            val autoSize = gameOption.getGuiScale(width, height, 0)
             notifySize(
                 if (gameMenu.menuSetting.itemBarWidth == 0) autoSize * 20 * 9 else gameMenu.menuSetting.itemBarWidth,
                 if (gameMenu.menuSetting.itemBarHeight == 0) autoSize * 20 else gameMenu.menuSetting.itemBarHeight
@@ -71,6 +69,10 @@ class GameItemBar @JvmOverloads constructor(
         }
         optionListener!!.onOptionChanged(false)
         gameOption.addGameOptionListener(optionListener)
+        // SC: and again whenever the touch pad gets (or changes) its real size
+        gameMenu.touchPad.addOnLayoutChangeListener { _, l, t, r, b, ol, ot, oldR, ob ->
+            if (r - l != oldR - ol || b - t != ob - ot) optionListener?.onOptionChanged(false)
+        }
         gameMenu.activity.lifecycleScope.launch {
             context.appSettingsDataStore.data.collect {
                 setting = it.gameItemBar

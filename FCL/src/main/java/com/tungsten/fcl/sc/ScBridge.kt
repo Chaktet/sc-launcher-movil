@@ -238,7 +238,7 @@ class ScBridge(private val activity: MainActivity, private val webView: WebView)
 
     /** «Cancelar» on the preparing screen (FCL launch steps). */
     @JavascriptInterface
-    fun cancelarCarga() { ScCarga.cancelar() }
+    fun cancelarCarga() { ScCarga.cancelar(); ScPack.cancelar() }
 
     /**
      * At start, on coming back to the app and every 30 min (the page calls it): a newer app on our website? On Wi-Fi it

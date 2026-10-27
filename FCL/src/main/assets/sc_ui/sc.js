@@ -300,7 +300,7 @@
       const t = (texto || '').replace(/…$/, '')
       const comprobando = /^Comprobando el modpack/.test(t)
       pintaCarga({ paso: comprobando ? 0 : 1, titulo: t, etapa: comprobando ? 'Modpack del servidor' : 'Mods y paquete de recursos',
-        pct: pct < 0 ? null : pct, cuenta: detalle || '', bps: 0, descarga: !comprobando, cancelable: false })
+        pct: pct < 0 ? null : pct, cuenta: detalle || '', bps: 0, descarga: !comprobando, cancelable: !comprobando })
     },
     listo() { modoCarga(false); $('zonaJugar').hidden = false; $('zonaProgreso').hidden = true; pintarCuenta() },
     // FCL's launch steps (ScCarga): real stage, counts, speed and time left measured on this phone
@@ -313,6 +313,8 @@
         bps: j.bps || 0, restante: j.restante, descarga, cancelable: true })
     },
     cierre(j) { muestraCierre(j) },
+    // Cancelar / Reintentar of the pack steps: back to the home screen, or straight into a new try
+    cancelado() { this.cargaFin(false) },
     cargaFin(ok) {
       $('btnCargaCancelar').textContent = 'Cancelar'; $('btnCargaCancelar').disabled = false
       const otraVez = carga.reintentar; carga.reintentar = false

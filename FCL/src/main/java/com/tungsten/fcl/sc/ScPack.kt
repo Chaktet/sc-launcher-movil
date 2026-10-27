@@ -62,6 +62,21 @@ object ScPack {
 
     private val running = AtomicBoolean(false)
 
+    // «Cancelar» / «Reintentar» while the pack downloads or installs (a player on a dropping connection had to close
+    // the app to try again, 27-10): stops our own download and FCL's install task
+    @Volatile private var cancelado = false
+    @Volatile private var tareaActual: TaskExecutor? = null
+    @Volatile private var conexionActual: HttpURLConnection? = null
+
+    fun cancelar() {
+        if (!running.get()) return
+        cancelado = true
+        tareaActual?.cancel()
+        runCatching { conexionActual?.disconnect() }
+    }
+
+    private fun siCancelado() { if (cancelado) throw ScError("Cancelado", "") }
+
     /**
      * Debug builds only (CI emulator test): prefs "sc" may point at a test manifest (debug_manifest_url, any host)
      * and skip launching the game after preparing it (debug_no_launch). Release builds ignore both.
@@ -95,6 +110,7 @@ object ScPack {
     /** JUGAR: makes sure the pack is current (installing/updating it if needed) and then launches the game. */
     fun playWhenReady(activity: MainActivity, forceRepair: Boolean = false) {
         if (!running.compareAndSet(false, true)) return
+        cancelado = false
         Schedulers.io().execute {
             try {
                 prepare(activity, forceRepair)
@@ -105,6 +121,7 @@ object ScPack {
                     else if (!noLaunch) activity.scLaunch()
                 }
             } catch (e: ScError) {
+                if (e.titulo == "Cancelado" || cancelado) { ScUi.js("scApp.cancelado()"); return@execute }
                 // no notice for being offline: that is the player's connection, not something we can fix
                 val codigo = when {
                     e.titulo == "Sin conexión" -> null
@@ -220,6 +237,7 @@ object ScPack {
             val c = URL(m.url).openConnection() as HttpURLConnection
             c.connectTimeout = 15000
             c.readTimeout = 30000
+            conexionActual = c
             try {
                 if (c.responseCode != 200) throw ScError("No se pudo descargar", "El servidor de descargas respondió ${c.responseCode}.")
                 c.inputStream.use { input ->
@@ -228,6 +246,7 @@ object ScPack {
                         var done = 0L
                         var lastPct = -1
                         while (true) {
+                            siCancelado()
                             val n = input.read(buf)
                             if (n < 0) break
                             out.write(buf, 0, n)
@@ -314,8 +333,12 @@ object ScPack {
             }
         }
         FetchTask.speedEvent.channel(FetchTask.SpeedEvent::class.java).registerWeak(speedHandler)
+        tareaActual = executor
+        siCancelado()
         executor.start()
         latch.await()
+        tareaActual = null
+        siCancelado()
         FetchTask.speedEvent.channel(FetchTask.SpeedEvent::class.java).unregister(speedHandler)
         if (!ok) {
             Logging.LOG.log(Level.WARNING, "SC pack: install/update failed", error)

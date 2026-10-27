@@ -193,6 +193,14 @@
             android:authorities="${applicationId}.crashreporterinitprovider"
             android:exported="false"
             android:initOrder="101" />
+        <!-- SC: reopens the app after it updated itself (ScAppUpdate); MY_PACKAGE_REPLACED is a protected broadcast -->
+        <receiver
+            android:name=".sc.ScActualizada"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
     </application>
     <queries>
         <package android:name="net.kdt.pojavlaunch.ffmpeg" />

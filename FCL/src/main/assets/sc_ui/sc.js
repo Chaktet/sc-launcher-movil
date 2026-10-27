@@ -231,7 +231,12 @@
 
   pintarCuenta()
   cargarEstado(); cargarNovedades()
-  if (SC.buscarActualizacion) SC.buscarActualizacion() // a newer app on our website is offered in a dialog
+  // a newer app on our website: checked at start, when coming back to the app and every 30 min (Wi-Fi: installs by itself)
+  if (SC.buscarActualizacion) {
+    SC.buscarActualizacion()
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') SC.buscarActualizacion() })
+    setInterval(() => { if (document.visibilityState === 'visible') SC.buscarActualizacion() }, 30 * 60 * 1000)
+  }
   setInterval(pintarEvento, 30000)
   setInterval(cargarEstado, 120000)
 })()

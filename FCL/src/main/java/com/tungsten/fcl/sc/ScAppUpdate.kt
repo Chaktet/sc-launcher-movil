@@ -1,7 +1,12 @@
 package com.tungsten.fcl.sc
 
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.PackageInstaller
+import android.net.ConnectivityManager
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
@@ -68,6 +73,15 @@ object ScAppUpdate {
             ""
         }
     }
+
+    /** Wi-Fi (or any unmetered network): only then the ~170 MB update downloads without asking. */
+    fun sinCoste(c: Context): Boolean =
+        runCatching { !(c.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager).isActiveNetworkMetered }.getOrDefault(false)
+
+    /** Automatic installs at most every 10 min: Android's own prompt sends the app to the background and back,
+     * which checks again, so a player who declines would otherwise get it again at once. */
+    @Volatile private var ultimoAuto = 0L
+    fun puedeAuto(): Boolean { val now = System.currentTimeMillis(); if (now - ultimoAuto < 10 * 60_000) return false; ultimoAuto = now; return true }
 
     private val busy = AtomicBoolean(false)
     private const val MAX_APK = 300L * 1024 * 1024
@@ -172,12 +186,61 @@ object ScAppUpdate {
             ScUi.js("scApp.dialogo('Permite instalar la actualización', 'Activa «Permitir de esta fuente» para SC Launcher, vuelve aquí y pulsa Continuar.', 'Más tarde', 'Continuar', 'actualizarApp')")
             return
         }
-        val uri = FileProvider.getUriForFile(activity, activity.packageName + ".provider", apk)
-        activity.startActivity(
-            Intent(Intent.ACTION_VIEW)
-                .setDataAndType(uri, "application/vnd.android.package-archive")
-                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
-        )
+        // Felix 27-10: «automático como en PC». Android's PackageInstaller session instead of the old «open the APK»
+        // intent: from Android 12 an app that installed itself (installer of record, set by the first update done
+        // this way) may update itself with USER_ACTION_NOT_REQUIRED, without the prompt. The first time, or on older
+        // Android, the status comes back PENDING_USER_ACTION and Android's own confirmation is shown.
+        val pi = activity.packageManager.packageInstaller
+        val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
+            setAppPackageName(activity.packageName)
+            setSize(apk.length())
+            if (Build.VERSION.SDK_INT >= 31) setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED)
+            if (Build.VERSION.SDK_INT >= 34) setRequestUpdateOwnership(true)
+        }
+        try {
+            val id = pi.createSession(params)
+            pi.openSession(id).use { s ->
+                s.openWrite("base.apk", 0, apk.length()).use { out ->
+                    apk.inputStream().use { it.copyTo(out, 256 * 1024) }
+                    s.fsync(out)
+                }
+                val app = activity.applicationContext
+                val receiver = object : BroadcastReceiver() {
+                    override fun onReceive(c: Context, i: Intent) {
+                        when (i.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE)) {
+                            PackageInstaller.STATUS_PENDING_USER_ACTION -> {
+                                @Suppress("DEPRECATION")
+                                val confirm = i.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
+                                confirm?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)?.let { runCatching { c.startActivity(it) } }
+                            }
+                            PackageInstaller.STATUS_SUCCESS -> runCatching { app.unregisterReceiver(this) }
+                            else -> {
+                                runCatching { app.unregisterReceiver(this) }
+                                val msg = i.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE).orEmpty()
+                                Logging.LOG.log(Level.WARNING, "SC app update: install failed: $msg")
+                                // cancelled by the player is not an error worth a dialog
+                                if (i.getIntExtra(PackageInstaller.EXTRA_STATUS, 0) != PackageInstaller.STATUS_FAILURE_ABORTED)
+                                    ScUi.js("scApp.error('No se pudo actualizar la app', 'Android no pudo instalar la nueva versión. Vuelve a intentarlo.')")
+                            }
+                        }
+                    }
+                }
+                val action = activity.packageName + ".SC_APP_UPDATE"
+                if (Build.VERSION.SDK_INT >= 33) app.registerReceiver(receiver, IntentFilter(action), Context.RECEIVER_NOT_EXPORTED)
+                else app.registerReceiver(receiver, IntentFilter(action))
+                val flags = PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= 31) PendingIntent.FLAG_MUTABLE else 0)
+                val status = PendingIntent.getBroadcast(app, id, Intent(action).setPackage(activity.packageName), flags)
+                s.commit(status.intentSender)
+            }
+        } catch (e: Exception) {
+            Logging.LOG.log(Level.WARNING, "SC app update: session failed, falling back to the installer screen", e)
+            val uri = FileProvider.getUriForFile(activity, activity.packageName + ".provider", apk)
+            activity.startActivity(
+                Intent(Intent.ACTION_VIEW)
+                    .setDataAndType(uri, "application/vnd.android.package-archive")
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        }
     }
 
     private fun progress(texto: String, pct: Int, detalle: String) =

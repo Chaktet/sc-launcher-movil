@@ -221,12 +221,17 @@ class ScBridge(private val activity: MainActivity, private val webView: WebView)
         }
     }
 
-    /** At start: a newer app on our website? The page offers it ({"version", "notas"} or ""). */
+    /**
+     * At start, on coming back to the app and every 30 min (the page calls it): a newer app on our website? On Wi-Fi it
+     * downloads and installs by itself (Felix 27-10: «automático»); on mobile data the page asks first.
+     */
     @JavascriptInterface
     fun buscarActualizacion() {
         io.execute {
             val r = ScAppUpdate.check(activity)
-            if (r.isNotEmpty()) {
+            if (r.isNotEmpty() && ScAppUpdate.sinCoste(activity)) {
+                if (ScAppUpdate.puedeAuto()) ScAppUpdate.downloadAndInstall(activity)
+            } else if (r.isNotEmpty()) {
                 val j = JSONObject(r)
                 val texto = "Ya está la versión ${j.getString("version")} de SC Launcher." +
                     j.optString("notas").takeIf { it.isNotBlank() }?.let { " $it" }.orEmpty()

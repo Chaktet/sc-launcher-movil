@@ -7,6 +7,7 @@ import com.tungsten.fcl.activity.MainActivity
 import com.tungsten.fcl.game.ModpackHelper
 import com.tungsten.fcl.setting.Profiles
 import com.tungsten.fclauncher.utils.FCLPath
+import com.tungsten.fclcore.task.FetchTask
 import com.tungsten.fclcore.task.Schedulers
 import com.tungsten.fclcore.task.Task
 import com.tungsten.fclcore.task.TaskExecutor
@@ -253,11 +254,19 @@ object ScPack {
         var error: Exception? = null
         var finished = 0
         lateinit var executor: TaskExecutor
+        // The last steps are the big downloads (Cobblemon alone is 140 MB) and can take minutes on a slow connection:
+        // the download speed shows they are moving (players reported «stuck at 99 %», 27-10)
+        val speed = java.util.concurrent.atomic.AtomicInteger(0)
+        fun paint() {
+            val total = executor.taskCount.coerceAtLeast(1)
+            val mbs = if (speed.get() > 0) " · " + "%.1f".format(speed.get() / 1_048_576.0) + " MB/s" else ""
+            val detail = if (total - finished in 1..50 && speed.get() > 0) "Descargando los últimos archivos$mbs" else "$finished / $total pasos$mbs"
+            ui(texto, (finished * 100 / total).coerceAtMost(99), detail)
+        }
         executor = task.executor(object : TaskListener() {
             override fun onFinished(task: Task<*>) {
                 finished++
-                val total = executor.taskCount.coerceAtLeast(1)
-                ui(texto, (finished * 100 / total).coerceAtMost(99), "$finished / $total pasos")
+                paint()
             }
 
             override fun onStop(success: Boolean, executor: TaskExecutor) {
@@ -266,8 +275,13 @@ object ScPack {
                 latch.countDown()
             }
         })
+        // registered once executor exists (the speed timer fires every second from its own thread); kept in a local
+        // so the weak registration lives until the install ends
+        val speedHandler = java.util.function.Consumer<FetchTask.SpeedEvent> { e -> runCatching { speed.set(e.speed); paint() } }
+        FetchTask.speedEvent.channel(FetchTask.SpeedEvent::class.java).registerWeak(speedHandler)
         executor.start()
         latch.await()
+        FetchTask.speedEvent.channel(FetchTask.SpeedEvent::class.java).unregister(speedHandler)
         if (!ok) {
             Logging.LOG.log(Level.WARNING, "SC pack: install/update failed", error)
             throw ScError(if (update) "No se pudo actualizar" else "No se pudo instalar",

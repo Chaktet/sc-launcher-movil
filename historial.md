@@ -16,6 +16,27 @@
 - Pendiente: fase 6 (móviles reales), quitar Terracotta/VPN y permisos sobrantes, textos legales/anuncios de FCL,
   CurseForge, revisión de licencias/NOTICE. Cada actualización del modpack baja 143 MB (el resource pack va dentro).
 
+## 2026-10-27 · 0.1.1: Móvil PRO, teclas del servidor, prueba a tamaño de móvil
+- Felix probó la 0.1.0 en un S25 Ultra: carga lenta, menú principal y Opciones «rotos», sin forma de pulsar M (inicial),
+  y pidió elegir PRO/LITE (eligió la opción A: «Móvil» por defecto + «Móvil PRO»).
+- Controles: el esquema por defecto (versionCode 1300) suma Pokémon (M, también el inicial), Lanzar (R) y Poké ▲/▼
+  (cambiar de Pokémon). `ScControls` lo pone una vez a quien ya tenía el viejo (copia en `00000000.json.anterior`).
+  El PokéNav del servidor es un objeto de la barra (se toca), no necesita tecla.
+- Móvil PRO: `movil_pro.js` (RESOURCE-MC, descargas-auto) = PRO de PC sin Ixeris, BorderlessFullscreen, ChatShot, spark,
+  Iris+shaders, sc-armor3d, sc-lockserver; pack, pantallas y sc-* del móvil. `auto_descargas.js` lo rehace solo cuando
+  cambia el PRO de PC o el móvil → `movil/sc-pack-pro.json`. Primero publicado: 2.4.3-1.1.52 (85 mods, 178 MB).
+  En la app: Ajustes › «Modpack Móvil / Modpack PRO»; cambiar = actualizar la misma instancia (opciones y mundos se quedan).
+- Carga: en el emulador el juego tarda ~9 min (el móvil real menos). La mayor parte es Cobblemon (modelos/animaciones);
+  además sc-menus-cliente espera hasta 90 s la primera vez bajando las pantallas (10.247 ficheros). Voice chat no tiene
+  nativos para Android (avisa, no rompe).
+- Menús rotos: en el emulador a 1920x1080 las pantallas FancyMenu eligen escala 3 (640x360), igual que en PC; no se
+  reproduce. Pendiente: capturas de Felix del menú principal y Opciones en el S25.
+- Codex (high) revisó: 1 bloqueante (un cambio de perfil a medias podía lanzar una mezcla: ahora se olvida la versión
+  instalada antes de instalar) y 2 bugs de controles (copia y cambio atómico), arreglados; el 4.º (mismo mod con dos
+  nombres en PRO) no pasa con las listas de hoy, queda como mejora.
+- Verificado: run 40505332276 (rama) 44/44: instala Móvil, actualiza, PRO (85 jars), vuelve a Móvil (31, sin los de PRO),
+  opciones intactas, PRO cargando 21 min sin fallos de mods.
+
 ## 2026-10-27 · Fases 2-5 y publicación de la 0.1.0
 - Felix (26-10 noche): «déjame este trabajo terminado y publicado cuando lo tengas listo y comprobado».
 - Hecho: pantallas, modpack automático, login Microsoft (ventana propia; el emulador se congela con la página real de

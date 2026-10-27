@@ -183,6 +183,13 @@ const mods2 = adb('ls', `'${run}/mods'`).split('\n').filter((x) => x.endsWith('.
 comprueba(mods2.length === mods.length, `mods still complete after the update (${mods2.length})`)
 comprueba(!mods2.includes('resto-ci.jar') && adb('sh', '-c', `"test -f '${run}/modpack.cfg' && echo si"`) === 'si',
   'an instance without modpack.cfg (install cut short) is installed again cleanly')
+// a normal update (cfg present now) must not copy the instance to .minecraft/backup (FCL's update task did, 27-10)
+const ci2 = { version: ci.version + '-2' }
+execFileSync('sh', ['-c', `sed -i 's/"version": *"[^"]*"/"version":"${ci2.version}"/' packci/sc-pack.json`])
+await ev(`document.getElementById('btnJugar').click()`)
+const t2 = Date.now()
+comprueba(await esperaPack(ci2.version, 15, 'ui-7b-actualizando'), `a second update is applied (${Math.round((Date.now() - t2) / 1000)} s)`)
+comprueba(!adb('sh', '-c', `"ls '${run}/../../backup' 2>/dev/null"`).includes('SC Cobblemon-'), 'updates leave no copy of the instance in .minecraft/backup')
 await ev(`SC.debug('debug_manifest_url', '')`)
 
 // repair: a broken mod is detected by its hash and downloaded again

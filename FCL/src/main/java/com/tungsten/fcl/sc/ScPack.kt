@@ -128,6 +128,11 @@ object ScPack {
         val profile = Profiles.getSelectedProfile()
         val repo = profile.repository
         if (!repo.isLoaded) repo.refreshVersions()
+        // Up to 0.1.4 every pack update left a full copy of the instance in .minecraft/backup (FCL's update task):
+        // free that space, on its own thread so JUGAR does not wait for thousands of deletions
+        File(repo.baseDirectory, "backup").listFiles { f -> f.isDirectory && f.name.startsWith("$INSTANCE-") }
+            ?.takeIf { it.isNotEmpty() }
+            ?.let { viejas -> Thread({ viejas.forEach { it.deleteRecursively() } }, "SC backups").apply { isDaemon = true }.start() }
         ui("Comprobando el modpack…", -1)
 
         val perfil = profile(activity)
@@ -257,8 +262,12 @@ object ScPack {
     private fun install(profile: com.tungsten.fcl.setting.Profile, mrpack: File, update: Boolean) {
         val modpack = ModpackHelper.readModpackManifest(mrpack.toPath(), StandardCharsets.UTF_8)
         val task: Task<*> = if (update) {
-            ModpackHelper.getUpdateTask(profile, mrpack, StandardCharsets.UTF_8, INSTANCE,
-                ModpackHelper.readModpackConfiguration(profile.repository.getModpackConfiguration(INSTANCE)))
+            // Not FCL's update task: it first copies the whole instance (~400 MB, 10,000+ files) to .minecraft/backup
+            // as a single step («0 / 1 pasos» for minutes, Felix 27-10) and never deletes those copies, so every pack
+            // update filled the phone a bit more. The Modrinth install task updates by itself: with the old
+            // modpack.cfg it removes the files the new pack dropped and keeps the rest.
+            com.tungsten.fclcore.mod.modrinth.ModrinthInstallTask(profile.dependency, mrpack, modpack,
+                modpack.manifest as com.tungsten.fclcore.mod.modrinth.ModrinthManifest, INSTANCE)
         } else {
             ModpackHelper.getInstallTask(profile, mrpack, INSTANCE, modpack)
         }

@@ -266,7 +266,7 @@ object ScPack {
             // as a single step («0 / 1 pasos» for minutes, Felix 27-10) and never deletes those copies, so every pack
             // update filled the phone a bit more. The Modrinth install task updates by itself: with the old
             // modpack.cfg it removes the files the new pack dropped and keeps the rest.
-            com.tungsten.fclcore.mod.modrinth.ModrinthInstallTask(profile.dependency, mrpack, modpack,
+            com.tungsten.fclcore.mod.modrinth.ModrinthInstallTask(profile.getDependency(), mrpack, modpack,
                 modpack.manifest as com.tungsten.fclcore.mod.modrinth.ModrinthManifest, INSTANCE)
         } else {
             ModpackHelper.getInstallTask(profile, mrpack, INSTANCE, modpack)

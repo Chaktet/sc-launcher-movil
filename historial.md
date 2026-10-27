@@ -1,7 +1,7 @@
 # Historial · SC Launcher Móvil
 
 ## Estado actual
-- Publicada la **0.1.4** (27-10, versionCode 5): pantallas PokéNav, modpack automático con dos perfiles (Ajustes ›
+- Publicada la **0.1.10** (27-10, versionCode 11; historial abajo). Base:: pantallas PokéNav, modpack automático con dos perfiles (Ajustes ›
   «Modpack Móvil / PRO»; `movil/sc-pack.json` y `movil/sc-pack-pro.json`, este último lo rehace solo
   `movil_pro.js` en descargas-auto), login Microsoft (código + PKCE), auto-actualización (`movil/app/sc-app.json`),
   botones táctiles del servidor (Pokémon/M, Lanzar/R, Poké ▲▼), reinstalación de instalaciones cortadas, velocidad de
@@ -13,6 +13,17 @@
 - Microsoft: app propia `b02d1916-762f-4732-ad9e-f10fc0a71fe9` pendiente de Mojang; al aprobarse, cambiar `OAUTH_API_KEY`.
 - Pendiente: quitar Terracotta/VPN y permisos sobrantes, textos legales de FCL, CurseForge, licencias/NOTICE; Java 8/17/25
   van en el APK sin usarse (solo hace falta el 21: ~60 MB menos y primer arranque más rápido).
+
+## 2026-10-27 noche (2) · 0.1.8, 0.1.9 y 0.1.10: pantallas propias en lugar de las de FCL
+- Diseños de Codex aprobados por Felix (`E:/tmp/app-android/codex-pantallas/`).
+- 0.1.8 carga: `ScCarga` escucha el executor de LauncherHelper (el TaskDialog de FCL ya no sale); 6 pasos, barra real
+  (archivos hechos/total), velocidad, tiempo restante medido en el móvil, «no cierres la app», estado «la descarga no
+  avanza» tras 1 min con Reintentar, Cancelar.
+- 0.1.9 error: `ScCierre` (GameMenu.onExit) guarda la causa leída del log y reabre la app con `ScReabrir` (proceso
+  :crash); la página enseña la causa, Volver a jugar, Enviar informe (SC-45) y Ver detalles. JVMCrashActivity ya no sale.
+- 0.1.10 bienvenida: `ScBienvenida` (página bienvenida.html sobre SplashActivity): Empezar acepta normas+GPL, permiso,
+  barra real de los componentes; el EULA/aviso/lista de FCL ya no salen.
+- Sin probar en el emulador ni en un móvil (Felix las prueba a mano). Pendiente: el menú lateral de FCL dentro del juego.
 
 ## 2026-10-27 noche · 0.1.5, 0.1.6 y 0.1.7 publicadas (sin prueba larga, Felix las prueba a mano)
 - 0.1.5: las actualizaciones del modpack ya no usan ModpackUpdateTask de FCL (copiaba la instancia entera a

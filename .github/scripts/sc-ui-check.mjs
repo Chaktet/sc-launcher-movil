@@ -77,7 +77,13 @@ for (let i = 0; i < 20 && !msInfo?.campo; i++) {
 comprueba(!!msInfo?.campo && !msInfo.aadsts, `«Cuenta Microsoft» opens Microsoft's sign-in page with our app (${msInfo ? msInfo.url.split('?')[0] + (msInfo.aadsts ? ' error ' + msInfo.aadsts : '') : 'no window'})`)
 informe.push('INFO Microsoft window URL: ' + (ms ? ms.url.slice(0, 300) : '-'))
 shot('ui-1b-microsoft')
-execFileSync('adb', ['shell', 'input', 'keyevent', 'KEYCODE_BACK'])
+try {
+  execFileSync('adb', ['shell', 'input', 'keyevent', 'KEYCODE_BACK'], { timeout: 30000 })
+} catch (e) {
+  // The emulator stopped answering: say so and stop here instead of hanging until the job timeout
+  comprueba(false, 'the emulator still answers after the Microsoft window (adb: ' + e.message.split('\n')[0] + ')')
+  process.exit(1)
+}
 await sleep(2500)
 comprueba(await visible('#vCuenta'), 'back from the Microsoft window cancels and returns to «¿Cómo quieres entrar?»')
 

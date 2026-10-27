@@ -50,6 +50,8 @@ adb shell "run-as $PKG sh -c 'cat > shared_prefs/launcher.xml'" <<'XML'
 </map>
 XML
 adb logcat -c
+# Streamed to a file as it happens, so the log survives even if the emulator itself dies
+(adb logcat -v time > evidence/logcat-live.txt 2>&1 &)
 # Right after boot Google Play services restarts itself, and Android kills any app using its font provider with it
 # (seen in CI: "depends on provider ... FontsProvider in dying proc"). Let it settle, and relaunch once if that happens.
 sleep 60
@@ -79,7 +81,7 @@ adb shell appops set "$PKG" REQUEST_INSTALL_PACKAGES allow
 (cd packci && python3 -m http.server 8000 >/dev/null 2>&1 &)
 sleep 2
 node .github/scripts/sc-ui-check.mjs "$PKG" || FALLO=1
-adb logcat -d > evidence/debug-logcat.txt
+timeout 60 adb logcat -d > evidence/debug-logcat.txt
 if grep -A3 "FATAL EXCEPTION" evidence/debug-logcat.txt | grep -q "$PKG"; then
   echo "::error::debug: the app crashed"; grep -A20 "FATAL EXCEPTION" evidence/debug-logcat.txt | head -40; FALLO=1
 fi

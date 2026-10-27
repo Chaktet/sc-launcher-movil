@@ -1,0 +1,100 @@
+<!doctype html>
+<!-- SC Launcher (Android) · first start (Codex design 27-10, approved by Felix), shown by ScBienvenida over FCL's
+     SplashActivity instead of its welcome, legal and «installing components» screens. Talks to Java through SCB. -->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<link rel="stylesheet" href="sc.css">
+<style>
+  #bvCuerpo { flex: 1; min-height: 0; display: grid; grid-template-columns: 190px 1fr; grid-template-rows: 1fr auto; padding: 18px 24px 12px; margin-bottom: 12px; }
+  #bvEmblema { align-self: center; justify-self: center; width: 130px; height: 130px; position: relative; background: radial-gradient(circle at 35% 30%, #DDF3FF 0 10%, #5FB7F0 11% 34%, #1E73C8 35% 62%, #0D3F7A 63%); border-radius: 50%; box-shadow: 0 0 0 6px var(--pk-ink), 0 0 0 12px var(--pk-cream), 0 0 0 16px var(--pk-ink); }
+  #bvEmblema::after { content: ''; position: absolute; right: -26px; top: -22px; width: 26px; height: 26px; background: var(--pk-gold); clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); }
+  #bvDatos { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding-left: 10px; }
+  #bvTitulo { font: 400 22px/30px var(--pk-font-pixel); text-transform: uppercase; color: var(--pk-ink); }
+  #bvLema { font: 400 18px/24px var(--pk-font-body); margin-bottom: 8px; }
+  .bvFila { display: flex; justify-content: space-between; gap: 10px; font: 700 17px/23px var(--pk-font-body); }
+  #bvPista { height: 20px; background: var(--pk-paper); box-shadow: inset 0 0 0 2px var(--pk-ink); padding: 3px; overflow: hidden; }
+  #bvRelleno { height: 100%; width: 0; background: var(--pk-blue-deep); transition: width .3s ease; }
+  #bvPista.sinDato #bvRelleno { width: 30%; animation: cargaVaiven 1.4s ease-in-out infinite alternate; }
+  #bvDetalle { font: 400 16px/22px var(--pk-font-body); min-height: 22px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #bvPie { grid-column: 1 / 3; display: flex; align-items: center; gap: 16px; padding-top: 10px; margin-top: 10px; border-top: 2px solid var(--pk-tab); }
+  #bvPie > div { flex: 1; font: 400 15px/18px var(--pk-font-body); }
+  #bvPie .enlaces { display: flex; gap: 18px; margin-top: 4px; }
+  #bvPie .enlaces button { font: 700 15px/20px var(--pk-font-body); text-decoration: underline; background: none; color: var(--pk-ink); min-height: 30px; }
+  #btnEmpezar { min-width: 170px; min-height: 47px; font-size: 19px; }
+  #btnEmpezar:disabled { --bg: #D5DEE4; --fg: #52647A; }
+  @media (max-width: 720px) { #bvCuerpo { grid-template-columns: 130px 1fr; } #bvEmblema { width: 96px; height: 96px; } #bvTitulo { font-size: 17px; line-height: 23px; } }
+</style>
+</head>
+<body>
+<div id="carcasa">
+  <header id="cab">
+    <div id="marca">
+      <span id="lente" aria-hidden="true"></span>
+      <span id="luces" aria-hidden="true"></span>
+      <img id="sello" src="img/sello.png" alt="">
+      <span id="marcaTexto"><span id="marcaKicker">Servidor</span><span id="marcaNombre">Cobblemon</span></span>
+    </div>
+  </header>
+  <section class="vista">
+    <div id="bvCuerpo" class="sc2Frame">
+      <div id="bvEmblema" aria-hidden="true"></div>
+      <div id="bvDatos">
+        <h1 class="pixel" id="bvTitulo">¡Bienvenido a Servidor Cobblemon!</h1>
+        <p id="bvLema">Tu aventura en el servidor, desde tu móvil.</p>
+        <div class="bvFila"><strong id="bvEtapa">Pulsa «Empezar» para preparar la app</strong><strong id="bvPct"></strong></div>
+        <div id="bvPista"><div id="bvRelleno"></div></div>
+        <span id="bvDetalle">La primera vez prepara Java y las bibliotecas del juego (un minuto aproximadamente).</span>
+      </div>
+      <div id="bvPie">
+        <div>Al continuar aceptas las normas del servidor<br>y la licencia GPL de la app.
+          <div class="enlaces"><button id="lnNormas" type="button">Normas</button><button id="lnLicencia" type="button">Licencia</button></div>
+        </div>
+        <button id="btnEmpezar" class="btn btnAzul" type="button">Empezar</button>
+      </div>
+    </div>
+  </section>
+  <footer id="pie">
+    <span id="verBadge"></span>
+    <button id="pieWeb" class="enlaceCrema" type="button">servidorcobblemon.es</button>
+    <div id="pieLinks"></div>
+  </footer>
+</div>
+<script>
+(function () {
+  'use strict'
+  const $ = (id) => document.getElementById(id)
+  const B = window.SCB || { empezar () {}, abrir () {}, version: () => '' }
+  try { $('verBadge').textContent = 'v' + B.version() } catch (e) {}
+  $('btnEmpezar').onclick = () => { $('btnEmpezar').disabled = true; $('btnEmpezar').textContent = 'Preparando…'; B.empezar() }
+  $('lnNormas').onclick = () => B.abrir('https://servidorcobblemon.es/reglas')
+  $('lnLicencia').onclick = () => B.abrir('https://github.com/Chaktet/sc-launcher-movil/blob/main/LICENSE')
+  $('pieWeb').onclick = () => B.abrir('https://servidorcobblemon.es')
+  let inicio = 0
+  // Called from Java (ScBienvenida): done/total components, the stage text and the file being unpacked
+  window.scBienvenida = {
+    esperando () { $('btnEmpezar').disabled = true; $('btnEmpezar').textContent = 'Preparando…' },
+    permiso () { $('bvEtapa').textContent = 'Android te pedirá permiso para guardar el juego'; $('bvDetalle').textContent = 'Acéptalo y vuelve a la app.' },
+    progreso (hechos, total, detalle) {
+      if (!inicio) inicio = Date.now()
+      $('btnEmpezar').disabled = true; $('btnEmpezar').textContent = 'Preparando…'
+      const pct = total > 0 ? Math.round(hechos * 100 / total) : 0
+      $('bvEtapa').textContent = 'Preparando Java y las bibliotecas'
+      $('bvPista').classList.toggle('sinDato', hechos === 0)
+      $('bvRelleno').style.width = pct + '%'
+      $('bvPct').textContent = hechos ? pct + ' %' : ''
+      let t = ''
+      if (hechos > 0 && hechos < total) {
+        const s = (Date.now() - inicio) / hechos * (total - hechos) / 1000
+        t = ' · quedan unos ' + (s >= 90 ? Math.round(s / 60) + ' min' : Math.max(5, Math.round(s / 5) * 5) + ' s')
+      }
+      $('bvDetalle').textContent = 'Primera preparación · ' + hechos + ' de ' + total + t + (detalle ? ' · ' + detalle : '')
+    },
+    listo () { $('bvRelleno').style.width = '100%'; $('bvPct').textContent = '100 %'; $('bvEtapa').textContent = 'Todo listo para empezar' },
+    error (texto) { $('bvEtapa').textContent = 'No se pudo preparar la app'; $('bvDetalle').textContent = texto; $('btnEmpezar').disabled = false; $('btnEmpezar').textContent = 'Reintentar' }
+  }
+})()
+</script>
+</body>
+</html>

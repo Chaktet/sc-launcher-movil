@@ -69,6 +69,17 @@ class SplashActivity : FCLActivity() {
         ImageUtil.loadInto(
             binding.background, ThemeEngine.getInstance().getTheme().getBackground(this)
         )
+        // SC: first start in our own page (ScBienvenida): «Empezar» accepts the rules and the licence, then permission
+        // and the components follow with our progress bar; FCL's welcome, agreement and storage notice are not shown
+        if (com.tungsten.fcl.sc.ScBienvenida.ACTIVO &&
+            !(LegalAgreement.isAccepted(this) && sharedPreferences.getBoolean("isAgree", false))) {
+            com.tungsten.fcl.sc.ScBienvenida.mostrar(this) {
+                LegalAgreement.accept(this)
+                sharedPreferences.edit { putBoolean("isAgree", true) }
+                checkPermission()
+            }
+            return
+        }
         // 启动流程第一步：确认用户协议与隐私政策。同意前不申请权限、不联网
         if (LegalAgreement.isAccepted(this)) {
             showStorageNotice()
@@ -112,6 +123,11 @@ class SplashActivity : FCLActivity() {
             init()
             return
         }
+        if (com.tungsten.fcl.sc.ScBienvenida.visible()) {
+            com.tungsten.fcl.sc.ScBienvenida.permiso()
+            requestPermission()
+            return
+        }
         FCLAlertDialog.Builder(this).apply {
             setCancelable(false)
             setAlertLevel(FCLAlertDialog.AlertLevel.ALERT)
@@ -138,6 +154,8 @@ class SplashActivity : FCLActivity() {
     }
 
     fun start() {
+        // SC: components to unpack (first start, or new ones after an update): our page shows the progress
+        if (com.tungsten.fcl.sc.ScBienvenida.ACTIVO && !com.tungsten.fcl.sc.ScBienvenida.visible()) com.tungsten.fcl.sc.ScBienvenida.mostrar(this) {}
         // init 协程可能在 Activity 转后台（onSaveInstanceState 之后）才恢复，Splash 流程无需保留事务状态，允许状态丢失。
         // 用户协议与隐私政策已在启动流程最前面确认，这里直接进入运行库安装
         supportFragmentManager.beginTransaction()
@@ -147,6 +165,7 @@ class SplashActivity : FCLActivity() {
     }
 
     fun enterLauncher() {
+        com.tungsten.fcl.sc.ScBienvenida.cerrar()
         lifecycleScope.launch {
             withContext(Dispatchers.IO) {
                 RendererManager.init(this@SplashActivity)

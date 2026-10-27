@@ -104,6 +104,8 @@ class RuntimeFragment : FCLFragment(), View.OnClickListener {
         if (installing) return
 
         installing = true
+        // SC: our first-start page counts the components it will unpack
+        com.tungsten.fcl.sc.ScBienvenida.empiezaInstalacion(listOf(lwjgl, cacio, cacio17, java8, java17, java21, java25, jna).count { !it })
         bind.apply {
             if (!lwjgl) {
                 launchInstall(lwjglState, lwjglProgress, lwjglDetail, { lwjgl = true }) {
@@ -191,9 +193,11 @@ class RuntimeFragment : FCLFragment(), View.OnClickListener {
             progress.visibility = View.GONE
             detail.visibility = View.GONE
             if (error != null) {
-                showErrorDialog(error.toString())
+                com.tungsten.fcl.sc.ScBienvenida.error(error.toString())
+                if (!com.tungsten.fcl.sc.ScBienvenida.visible()) showErrorDialog(error.toString())
             } else {
                 markDone()
+                com.tungsten.fcl.sc.ScBienvenida.componenteListo()
             }
             refreshDrawables()
             check()
@@ -218,6 +222,7 @@ class RuntimeFragment : FCLFragment(), View.OnClickListener {
         return object : RuntimeUtils.InstallListener {
             override fun onUpdate(detailText: String) {
                 post(detailText)
+                com.tungsten.fcl.sc.ScBienvenida.detalle(detailText)
             }
 
             override fun onStage(resId: Int) {

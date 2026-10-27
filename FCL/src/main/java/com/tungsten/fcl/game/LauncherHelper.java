@@ -140,7 +140,8 @@ public final class LauncherHelper {
     public void launch() {
         LOG.info("Launching game version: " + selectedVersion);
 
-        launchingStepsPane.show();
+        // SC: our own preparing screen (ScCarga) replaces FCL's launch dialog
+        if (!com.tungsten.fcl.sc.ScCarga.ACTIVO) launchingStepsPane.show();
         // 版本解析与 mod 全量扫描较重，挪到后台执行，避免阻塞主线程导致弹窗延迟显示
         Task.runAsync(this::launch0).whenComplete(Schedulers.androidUIThread(), e -> {
             // 任务链尚未构建时（版本解析/mod 扫描准备段）失败不会触发链内 onStop，在此兜底
@@ -323,7 +324,8 @@ public final class LauncherHelper {
                 .executor();
         // setExecutor 内部更新视图，且须先于 start 装配，整体切回主线程执行
         Schedulers.androidUIThread().execute(() -> {
-            launchingStepsPane.setExecutor(executor, false);
+            if (com.tungsten.fcl.sc.ScCarga.ACTIVO) com.tungsten.fcl.sc.ScCarga.adjuntar(executor);
+            else launchingStepsPane.setExecutor(executor, false);
             executor.addTaskListener(new TaskListener() {
 
                 @Override

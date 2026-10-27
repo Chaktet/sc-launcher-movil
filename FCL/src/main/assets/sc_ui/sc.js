@@ -205,19 +205,85 @@
     } catch (e) { /* keeps the default card text */ }
   }
 
+  // ---- Preparing the game (Codex design 27-10): our screen for the modpack and FCL's launch steps ----
+  const PASOS_FCL = { 'launch.state.version': 1, 'launch.state.mods': 1, 'launch.state.java': 2, 'launch.state.dependencies': 3, 'launch.state.logging_in': 4, 'launch.state.waiting_launching': 5 }
+  const carga = { paso: -1, desde: 0, pctDesde: 0, cuenta: '', cambio: 0, reintentar: false }
+  function modoCarga(on) {
+    document.body.classList.toggle('cargando', on)
+    $('pCarga').hidden = !on
+    if (on) { for (const id of ['pJugar', 'pEventos', 'pNovedades', 'pAjustes']) $(id).hidden = true }
+    else { carga.paso = -1; pestana('jugar') }
+  }
+  const tiempo = (s) => s >= 90 ? 'quedan unos ' + Math.round(s / 60) + ' min' : 'quedan unos ' + Math.max(5, Math.round(s / 5) * 5) + ' s'
+  // o: { paso 0-5, titulo, etapa, pct (null = no reliable number), cuenta, bps, restante (s), descarga, cancelable }
+  function pintaCarga(o) {
+    if ($('pCarga').hidden) modoCarga(true)
+    const ahora = Date.now()
+    if (o.paso !== carga.paso) { carga.paso = o.paso; carga.desde = ahora; carga.pctDesde = o.pct || 0; carga.cambio = ahora }
+    document.querySelectorAll('#listaPasos li').forEach((li, i) => { li.className = i < o.paso ? 'hecho' : (i === o.paso ? 'ahora' : '') })
+    // stuck: nothing moved for a minute in a download step
+    if (o.cuenta !== carga.cuenta || o.bps > 0) { carga.cuenta = o.cuenta; carga.cambio = ahora }
+    const parada = !!o.descarga && ahora - carga.cambio > 60000
+    $('cargaTitulo').textContent = parada ? 'La descarga no avanza' : o.titulo
+    $('cargaEtapa').textContent = o.etapa || ''
+    const sinDato = o.pct == null
+    $('cargaPista').classList.toggle('sinDato', sinDato)
+    $('cargaRelleno').style.width = sinDato ? '' : Math.round(o.pct) + '%'
+    $('cargaPct').textContent = sinDato ? '' : Math.round(o.pct) + ' %'
+    $('cargaCuenta').textContent = o.cuenta || ''
+    // time left: given by Java (pace of this stage on this phone) or measured here from the percentage
+    let restante = o.restante
+    if (restante == null && !sinDato && o.pct > carga.pctDesde + 2 && ahora - carga.desde > 8000) {
+      restante = (100 - o.pct) * (ahora - carga.desde) / (o.pct - carga.pctDesde) / 1000
+    }
+    const mb = o.bps > 0 ? (o.bps / 1048576).toFixed(1).replace('.', ',') + ' MB/s' : ''
+    $('cargaVel').textContent = parada ? '0 MB/s · sin estimación por ahora'
+      : [mb, restante > 0 ? tiempo(restante) : ''].filter(Boolean).join(' · ') || (sinDato ? 'Un momento…' : 'Calculando el tiempo restante')
+    $('cargaParada').hidden = !parada
+    $('cargaPaso').textContent = 'Paso ' + (o.paso + 1) + ' de 6'
+    $('cargaRellenoTotal').style.width = Math.round(o.paso * 100 / 6) + '%'
+    $('btnCargaCancelar').hidden = !o.cancelable
+    $('btnCargaReintentar').hidden = !(o.cancelable && parada)
+  }
+  $('btnCargaCancelar').onclick = () => { $('btnCargaCancelar').textContent = 'Cancelando…'; $('btnCargaCancelar').disabled = true; SC.cancelarCarga && SC.cancelarCarga() }
+  $('btnCargaReintentar').onclick = () => { carga.reintentar = true; SC.cancelarCarga && SC.cancelarCarga() }
+
   // ---- Called from Java ----
   window.scApp = {
     respuesta(id, ok, texto) { const p = pendientes.get(String(id)); if (!p) return; pendientes.delete(String(id)); ok ? p.ok(texto) : p.mal(new Error(texto)) },
     refrescar() { pintarCuenta() },
     // Progress of the modpack / game preparation (phase 3). pct < 0 = indeterminate.
     progreso(texto, pct, detalle) {
-      $('zonaJugar').hidden = true; $('zonaProgreso').hidden = false; $('avisoError').hidden = true
-      $('progTexto').textContent = texto || ''
-      $('progDetalle').textContent = detalle || ''
-      const v = pct < 0 ? 100 : Math.max(0, Math.min(100, pct))
-      $('progRelleno').style.width = v + '%'; $('progPct').textContent = pct < 0 ? '' : Math.round(v) + '%'
+      // the app's own update keeps the small card; the modpack steps of JUGAR and «Reparar» use the loading screen
+      if (/^Descargando SC Launcher/.test(texto || '')) {
+        $('zonaJugar').hidden = true; $('zonaProgreso').hidden = false; $('avisoError').hidden = true
+        $('progTexto').textContent = texto || ''
+        $('progDetalle').textContent = detalle || ''
+        const v = pct < 0 ? 100 : Math.max(0, Math.min(100, pct))
+        $('progRelleno').style.width = v + '%'; $('progPct').textContent = pct < 0 ? '' : Math.round(v) + '%'
+        return
+      }
+      const t = (texto || '').replace(/…$/, '')
+      const comprobando = /^Comprobando el modpack/.test(t)
+      pintaCarga({ paso: comprobando ? 0 : 1, titulo: t, etapa: comprobando ? 'Modpack del servidor' : 'Mods y paquete de recursos',
+        pct: pct < 0 ? null : pct, cuenta: detalle || '', bps: 0, descarga: !comprobando, cancelable: false })
     },
-    listo() { $('zonaJugar').hidden = false; $('zonaProgreso').hidden = true; pintarCuenta() },
+    listo() { modoCarga(false); $('zonaJugar').hidden = false; $('zonaProgreso').hidden = true; pintarCuenta() },
+    // FCL's launch steps (ScCarga): real stage, counts, speed and time left measured on this phone
+    carga(j) {
+      const paso = PASOS_FCL[j.etapa] != null ? PASOS_FCL[j.etapa] : 1
+      const descarga = j.etapa === 'launch.state.dependencies'
+      pintaCarga({ paso, titulo: j.titulo, etapa: descarga ? 'Recursos de Minecraft' : j.titulo,
+        pct: j.total > 0 ? Math.min(100, j.hechos * 100 / j.total) : null,
+        cuenta: j.total > 0 ? j.hechos.toLocaleString('es-ES') + ' de ' + j.total.toLocaleString('es-ES') + ' archivos' : '',
+        bps: j.bps || 0, restante: j.restante, descarga, cancelable: true })
+    },
+    cargaFin(ok) {
+      $('btnCargaCancelar').textContent = 'Cancelar'; $('btnCargaCancelar').disabled = false
+      const otraVez = carga.reintentar; carga.reintentar = false
+      this.listo()
+      if (otraVez) setTimeout(() => $('btnJugar').click(), 300)
+    },
     error(titulo, texto) { this.listo(); $('errTitulo').textContent = titulo; $('errTexto').textContent = texto || ''; $('avisoError').hidden = false },
     dialogo(titulo, texto, no, si, accion) { dialogo(titulo, texto, no, si, accion ? () => SC.accion(accion) : null) },
     atras() { // Android back button: close dialog / go back inside our screens; returns true if handled

@@ -79,6 +79,38 @@
     </nav>
 
     <div id="pantalla" class="pantalla">
+      <!-- Preparing the game (Codex design 27-10, approved): replaces FCL's launch dialog -->
+      <div class="panelP" id="pCarga" hidden>
+        <div id="cargaCuerpo" class="sc2Frame">
+          <div id="cargaPasos">
+            <span class="kicker rojo">Preparando tu partida</span>
+            <ol id="listaPasos">
+              <li>Comprobando el modpack</li>
+              <li>Descargando mods</li>
+              <li>Preparando Java</li>
+              <li>Recursos de Minecraft<small>(sonidos, idiomas)</small></li>
+              <li>Iniciando sesión</li>
+              <li>Abriendo el juego</li>
+            </ol>
+          </div>
+          <div id="cargaDatos">
+            <h1 class="pixel" id="cargaTitulo">Preparando…</h1>
+            <div class="cargaFila"><strong id="cargaEtapa"></strong><strong id="cargaPct"></strong></div>
+            <div class="cargaPista" id="cargaPista"><div id="cargaRelleno"></div></div>
+            <span id="cargaCuenta"></span>
+            <strong id="cargaVel">Calculando el tiempo restante</strong>
+            <div id="cargaParada" hidden><span class="icoAviso" aria-hidden="true"></span><strong>Parece que la descarga no avanza:<br>comprueba tu conexión</strong></div>
+            <div class="cargaFila"><strong>Progreso total</strong><strong id="cargaPaso"></strong></div>
+            <div class="cargaPista fina"><div id="cargaRellenoTotal"></div></div>
+          </div>
+          <div id="cargaPie">
+            <span class="icoAviso" aria-hidden="true"></span>
+            <div><strong>No cierres la app ni apagues la pantalla:<br>si se corta, tendrá que empezar de nuevo.</strong><span>La primera vez tarda más; las siguientes solo comprueba.</span></div>
+            <button id="btnCargaReintentar" class="btn btnAzul" type="button" hidden>Reintentar</button>
+            <button id="btnCargaCancelar" class="btn" type="button" hidden>Cancelar</button>
+          </div>
+        </div>
+      </div>
       <!-- Jugar -->
       <div class="panelP" id="pJugar">
         <div id="heroe" class="sc2Frame">

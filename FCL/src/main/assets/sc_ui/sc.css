@@ -255,3 +255,42 @@ input[type=range]:disabled { opacity: .5; }
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--pk-blue); }
+
+/* ---- Preparing the game (Codex design 27-10, ficha-pantallas.md §1/1b) ---- */
+#pCarga { gap: 0; }
+#cargaCuerpo { flex: 1; min-height: 0; display: grid; grid-template-columns: 268px 1fr; grid-template-rows: 1fr auto; padding: 12px 18px 8px; column-gap: 0; }
+#cargaPasos { padding-right: 14px; border-right: 2px solid var(--pk-tab); display: flex; flex-direction: column; gap: 2px; min-height: 0; }
+#listaPasos { list-style: none; counter-reset: paso; display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
+#listaPasos li { counter-increment: paso; position: relative; padding: 2px 6px 2px 52px; font: 700 14px/18px var(--pk-font-body); color: var(--pk-ink); white-space: nowrap; }
+#listaPasos li::before { content: ''; position: absolute; left: 6px; top: 3px; width: 16px; height: 16px; box-shadow: inset 0 0 0 2px var(--pk-ink); border-radius: 50%; }
+#listaPasos li::after { content: counter(paso); position: absolute; left: 30px; top: 2px; }
+#listaPasos li small { display: block; font: 400 12px/15px var(--pk-font-body); }
+#listaPasos li.hecho::before { border-radius: 0; background: #2F6B32 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath d='M1 4h1v1h1v1h1V5h1V4h1V3h1V2h1v1H7v1H6v1H5v1H4v1H3V6H2V5H1z' fill='%23fff'/%3E%3C/svg%3E") center / 12px no-repeat; box-shadow: inset 0 0 0 2px var(--pk-ink); }
+#listaPasos li.ahora { background: #D6E8F6; }
+#listaPasos li.ahora::before { background: var(--pk-blue-deep); box-shadow: none; }
+#cargaDatos { padding-left: 20px; display: flex; flex-direction: column; gap: 3px; min-width: 0; min-height: 0; }
+#cargaTitulo { font: 400 18px/24px var(--pk-font-pixel); text-transform: uppercase; color: var(--pk-ink); margin-bottom: 8px; flex: none; }
+.cargaFila { display: flex; justify-content: space-between; gap: 10px; font: 700 16px/22px var(--pk-font-body); }
+.cargaFila strong:first-child { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.cargaPista { height: 19px; background: var(--pk-paper); box-shadow: inset 0 0 0 2px var(--pk-ink); padding: 3px; overflow: hidden; }
+.cargaPista.fina { height: 14px; }
+.cargaPista > div { height: 100%; width: 0; background: var(--pk-blue-deep); transition: width .3s ease; }
+/* no reliable number: activity without a percentage (never a made-up one) */
+.cargaPista.sinDato > div { width: 30% !important; animation: cargaVaiven 1.4s ease-in-out infinite alternate; }
+@keyframes cargaVaiven { from { margin-left: 0; } to { margin-left: 70%; } }
+#cargaCuenta { font: 400 15px/20px var(--pk-font-body); min-height: 20px; }
+#cargaVel { font: 700 15px/20px var(--pk-font-body); margin-bottom: 8px; }
+#cargaParada { display: flex; gap: 10px; align-items: center; padding: 5px 10px; margin: 0 0 6px; background: var(--pk-paper); box-shadow: inset 0 0 0 2px var(--pk-ink), inset 4px 0 0 var(--pk-gold); font: 700 15px/17px var(--pk-font-body); }
+#cargaParada[hidden] { display: none; }
+#cargaPie { grid-column: 1 / 3; display: flex; align-items: center; gap: 12px; padding-top: 8px; margin-top: 8px; border-top: 2px solid var(--pk-ink); }
+#cargaPie > div { flex: 1; min-width: 0; font: 700 14px/17px var(--pk-font-body); }
+#cargaPie > div span { display: block; font-weight: 400; color: var(--pk-muted); }
+#cargaPie .btn { min-width: 120px; }
+#cargaPie .btn[hidden] { display: none; }
+.icoAviso { flex: none; width: 28px; height: 28px; background: var(--pk-gold); clip-path: var(--pk-corner-4); box-shadow: inset 0 0 0 2px var(--pk-ink); position: relative; }
+.icoAviso::after { content: '!'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 900 18px/1 var(--pk-font-body); color: var(--pk-ink); }
+body.cargando #pestanas { display: none; }
+@media (max-width: 720px) { #cargaCuerpo { grid-template-columns: 205px 1fr; padding: 10px 12px 8px; } #listaPasos li { font-size: 13px; line-height: 17px; padding-left: 50px; } #cargaTitulo { font-size: 16px; line-height: 21px; } }
+/* short screens: the step list shrinks instead of running under the bottom line (Felix 27-10) */
+#cargaPasos, #cargaDatos { overflow: hidden; }
+@media (max-height: 380px) { #listaPasos li { font-size: 12px; line-height: 15px; padding-top: 1px; padding-bottom: 1px; } #listaPasos li::before { top: 1px; width: 13px; height: 13px; } #listaPasos li small { display: none; } #cargaTitulo { font-size: 16px; line-height: 22px; margin-bottom: 4px; } }

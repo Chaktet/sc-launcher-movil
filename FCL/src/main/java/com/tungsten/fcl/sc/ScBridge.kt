@@ -221,6 +221,10 @@ class ScBridge(private val activity: MainActivity, private val webView: WebView)
         }
     }
 
+    /** «Cancelar» on the preparing screen (FCL launch steps). */
+    @JavascriptInterface
+    fun cancelarCarga() { ScCarga.cancelar() }
+
     /**
      * At start, on coming back to the app and every 30 min (the page calls it): a newer app on our website? On Wi-Fi it
      * downloads and installs by itself (Felix 27-10: «automático»); on mobile data the page asks first.

@@ -199,6 +199,12 @@
             android:exported="false"
             android:process=":crash"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <!-- SC: result of the app updating itself (ScAppUpdate): confirmation, or reopening the new version -->
+        <activity
+            android:name=".sc.ScResultadoInstalacion"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
         <!-- SC: reopens the app after it updated itself (ScAppUpdate); MY_PACKAGE_REPLACED is a protected broadcast -->
         <receiver
             android:name=".sc.ScActualizada"

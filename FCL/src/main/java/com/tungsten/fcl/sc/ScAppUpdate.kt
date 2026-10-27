@@ -204,32 +204,12 @@ object ScAppUpdate {
                     apk.inputStream().use { it.copyTo(out, 256 * 1024) }
                     s.fsync(out)
                 }
+                // The status goes to an activity, not a receiver (Felix 27-10: after 0.1.11 installed itself the app stayed
+                // closed): Android's installer delivers it, and it may open a screen, so on success the app opens again
+                // by itself in its new version. ScResultadoInstalacion also shows Android's confirmation when it is needed.
                 val app = activity.applicationContext
-                val receiver = object : BroadcastReceiver() {
-                    override fun onReceive(c: Context, i: Intent) {
-                        when (i.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE)) {
-                            PackageInstaller.STATUS_PENDING_USER_ACTION -> {
-                                @Suppress("DEPRECATION")
-                                val confirm = i.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
-                                confirm?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)?.let { runCatching { c.startActivity(it) } }
-                            }
-                            PackageInstaller.STATUS_SUCCESS -> runCatching { app.unregisterReceiver(this) }
-                            else -> {
-                                runCatching { app.unregisterReceiver(this) }
-                                val msg = i.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE).orEmpty()
-                                Logging.LOG.log(Level.WARNING, "SC app update: install failed: $msg")
-                                // cancelled by the player is not an error worth a dialog
-                                if (i.getIntExtra(PackageInstaller.EXTRA_STATUS, 0) != PackageInstaller.STATUS_FAILURE_ABORTED)
-                                    ScUi.js("scApp.error('No se pudo actualizar la app', 'Android no pudo instalar la nueva versión. Vuelve a intentarlo.')")
-                            }
-                        }
-                    }
-                }
-                val action = activity.packageName + ".SC_APP_UPDATE"
-                if (Build.VERSION.SDK_INT >= 33) app.registerReceiver(receiver, IntentFilter(action), Context.RECEIVER_NOT_EXPORTED)
-                else app.registerReceiver(receiver, IntentFilter(action))
                 val flags = PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= 31) PendingIntent.FLAG_MUTABLE else 0)
-                val status = PendingIntent.getBroadcast(app, id, Intent(action).setPackage(activity.packageName), flags)
+                val status = PendingIntent.getActivity(app, id, Intent(app, ScResultadoInstalacion::class.java), flags)
                 s.commit(status.intentSender)
             }
         } catch (e: Exception) {
@@ -271,5 +251,35 @@ object ScAppUpdate {
             }
         }
         return md.digest().joinToString("") { "%02x".format(it) }
+    }
+}
+
+/**
+ * Receives the result of the app's own update from Android's installer (ScAppUpdate): shows Android's confirmation
+ * when it asks for one, opens the app again in its new version when it worked, and reports a failure in our page.
+ */
+class ScResultadoInstalacion : android.app.Activity() {
+    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+        super.onCreate(savedInstanceState)
+        val i = intent
+        when (i.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE)) {
+            PackageInstaller.STATUS_PENDING_USER_ACTION -> {
+                @Suppress("DEPRECATION")
+                val confirm = i.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
+                confirm?.let { runCatching { startActivity(it) } }
+            }
+            PackageInstaller.STATUS_SUCCESS -> runCatching {
+                startActivity(Intent(this, com.tungsten.fcl.activity.SplashActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+            }
+            else -> {
+                val msg = i.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE).orEmpty()
+                Logging.LOG.log(Level.WARNING, "SC app update: install failed: $msg")
+                // cancelled by the player is not an error worth a dialog
+                if (i.getIntExtra(PackageInstaller.EXTRA_STATUS, 0) != PackageInstaller.STATUS_FAILURE_ABORTED)
+                    ScUi.js("scApp.error('No se pudo actualizar la app', 'Android no pudo instalar la nueva versión. Vuelve a intentarlo.')")
+            }
+        }
+        finish()
     }
 }

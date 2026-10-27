@@ -1,7 +1,7 @@
 # Historial · SC Launcher Móvil
 
 ## Estado actual
-- Publicada la **0.1.10** (27-10, versionCode 11; historial abajo). Base:: pantallas PokéNav, modpack automático con dos perfiles (Ajustes ›
+- Publicada la **0.1.11** (27-10, versionCode 12; historial abajo). Base:: pantallas PokéNav, modpack automático con dos perfiles (Ajustes ›
   «Modpack Móvil / PRO»; `movil/sc-pack.json` y `movil/sc-pack-pro.json`, este último lo rehace solo
   `movil_pro.js` en descargas-auto), login Microsoft (código + PKCE), auto-actualización (`movil/app/sc-app.json`),
   botones táctiles del servidor (Pokémon/M, Lanzar/R, Poké ▲▼), reinstalación de instalaciones cortadas, velocidad de
@@ -13,6 +13,13 @@
 - Microsoft: app propia `b02d1916-762f-4732-ad9e-f10fc0a71fe9` pendiente de Mojang; al aprobarse, cambiar `OAUTH_API_KEY`.
 - Pendiente: quitar Terracotta/VPN y permisos sobrantes, textos legales de FCL, CurseForge, licencias/NOTICE; Java 8/17/25
   van en el APK sin usarse (solo hace falta el 21: ~60 MB menos y primer arranque más rápido).
+
+## 2026-10-27 noche (3) · 0.1.11: menú del juego propio
+- Diseño de Codex aprobado por Felix (`E:/tmp/app-android/codex-menu/`). `ScMenuJuego` + `assets/sc_ui/menu-juego.html`:
+  el botón flotante (MenuView, lente roja `sc_menu_lente`) abre nuestro panel en vez de los cajones de FCL; cada opción
+  llama al manejador de FCL vía `GameMenu.scAccion`/`scEstado`. «Bloquear la cámara» fuera (LOCK_VIEW solo fija el botón).
+  «Opciones avanzadas» abre el menú completo de FCL.
+- Memoria: sesión «movil-memoria» trabaja en la rama `fix/memoria-pack` (OOM al recargar recursos = el pack se quita).
 
 ## 2026-10-27 noche (2) · 0.1.8, 0.1.9 y 0.1.10: pantallas propias en lugar de las de FCL
 - Diseños de Codex aprobados por Felix (`E:/tmp/app-android/codex-pantallas/`).

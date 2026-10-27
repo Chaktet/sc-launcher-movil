@@ -11,7 +11,10 @@ import com.tungsten.fcl.activity.MainActivity
 import com.tungsten.fcl.setting.Accounts
 import com.tungsten.fcl.setting.Profiles
 import com.tungsten.fcl.setting.VersionSetting
+import com.tungsten.fclcore.auth.CharacterSelector
+import com.tungsten.fclcore.auth.NoSelectedCharacterException
 import com.tungsten.fclcore.auth.microsoft.MicrosoftAccount
+import java.util.concurrent.CancellationException
 import com.tungsten.fclcore.auth.offline.OfflineAccountFactory
 import com.tungsten.fclcore.util.Logging
 import com.tungsten.fclcore.util.platform.MemoryUtils
@@ -119,8 +122,27 @@ class ScBridge(private val activity: MainActivity, private val webView: WebView)
 
     @JavascriptInterface
     fun entrarMicrosoft() {
-        // Phase 4 (PLAN-APP-ANDROID.md): in-app Microsoft window with the desktop launcher's redirect.
-        ScUi.js("scApp.dialogo('Cuenta Microsoft', 'En esta versión de prueba todavía no se puede entrar con Microsoft. Entra con No Premium.', '', 'Entendido', '')")
+        // Phase 4: the Microsoft window (ScMicrosoft) opens from FCL's login; Xbox/Minecraft steps follow when it closes
+        io.execute {
+            try {
+                val selector = CharacterSelector { _, names ->
+                    names.firstOrNull() ?: throw NoSelectedCharacterException()
+                }
+                val account = Accounts.FACTORY_MICROSOFT.create(selector, null, null, null, null)
+                onMain {
+                    Accounts.getAccounts().firstOrNull { it is MicrosoftAccount && it.uuid == account.uuid }
+                        ?.let { Accounts.getAccounts().remove(it) }
+                    Accounts.addAccount(account)
+                    Accounts.setSelectedAccount(account)
+                }
+                ScUi.js("scApp.refrescar()")
+            } catch (e: Exception) {
+                if (e is NoSelectedCharacterException || e is CancellationException) return@execute
+                Logging.LOG.log(Level.WARNING, "SC: Microsoft sign-in failed", e)
+                val msg = JSONObject.quote(Accounts.localizeErrorMessage(activity, e))
+                ScUi.js("scApp.dialogo('No se pudo entrar con Microsoft', $msg, '', 'Entendido', '')")
+            }
+        }
     }
 
     @JavascriptInterface
@@ -180,7 +202,7 @@ class ScBridge(private val activity: MainActivity, private val webView: WebView)
     @JavascriptInterface
     fun debug(clave: String, valor: String) {
         if ((activity.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) == 0) return
-        if (clave !in setOf("debug_manifest_url", "debug_no_launch")) return
+        if (clave !in setOf("debug_manifest_url", "debug_no_launch", "debug_app_manifest_url")) return
         val e = activity.getSharedPreferences("sc", android.content.Context.MODE_PRIVATE).edit()
         if (clave == "debug_no_launch") e.putBoolean(clave, valor == "1") else e.putString(clave, valor)
         e.apply()
@@ -188,7 +210,24 @@ class ScBridge(private val activity: MainActivity, private val webView: WebView)
 
     @JavascriptInterface
     fun accion(nombre: String) {
-        // Reserved for dialog actions coming from Java (phase 3/5: update app, retry).
+        // Dialog actions offered from Java
+        when (nombre) {
+            "actualizarApp" -> io.execute { ScAppUpdate.downloadAndInstall(activity) }
+        }
+    }
+
+    /** At start: a newer app on our website? The page offers it ({"version", "notas"} or ""). */
+    @JavascriptInterface
+    fun buscarActualizacion() {
+        io.execute {
+            val r = ScAppUpdate.check(activity)
+            if (r.isNotEmpty()) {
+                val j = JSONObject(r)
+                val texto = "Ya está la versión ${j.getString("version")} de SC Launcher." +
+                    j.optString("notas").takeIf { it.isNotBlank() }?.let { " $it" }.orEmpty()
+                ScUi.js("scApp.dialogo('Nueva versión de la app', ${JSONObject.quote(texto)}, 'Más tarde', 'Actualizar', 'actualizarApp')")
+            }
+        }
     }
 
     companion object {

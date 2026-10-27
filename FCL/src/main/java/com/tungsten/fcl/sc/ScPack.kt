@@ -56,7 +56,6 @@ object ScPack {
 
     private class Manifest(val version: String, val url: String, val sha256: String, val size: Long)
 
-    private class ScError(val titulo: String, val texto: String) : Exception(texto)
 
     private fun ui(texto: String, pct: Int, detalle: String = "") =
         ScUi.js("scApp.progreso(${JSONObject.quote(texto)}, $pct, ${JSONObject.quote(detalle)})")

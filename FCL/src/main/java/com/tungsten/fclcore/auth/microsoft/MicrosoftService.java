@@ -92,7 +92,10 @@ public class MicrosoftService {
     public MicrosoftSession authenticate(AccountFactory.ProgressCallback progressCallback) throws AuthenticationException {
         requireNonNull(progressCallback);
         try {
-            OAuth.Result result = OAuth.MICROSOFT.authenticate(OAuth.GrantFlow.DEVICE, new OAuth.Options(SCOPE, callback));
+            // SC: our Entra app (the desktop launcher's) rejects the device code flow; sign in with the code flow in
+            // an in-app window instead (com.tungsten.fcl.sc.ScMicrosoft)
+            OAuth.Result result = com.tungsten.fcl.sc.ScMicrosoft.OAUTH.authenticate(OAuth.GrantFlow.AUTHORIZATION_CODE,
+                    new OAuth.Options(SCOPE, com.tungsten.fcl.sc.ScMicrosoft.CALLBACK));
             return authenticateViaLiveAccessToken(result.accessToken(), result.refreshToken(), progressCallback);
         } catch (IOException e) {
             throw new ServerDisconnectException(e);

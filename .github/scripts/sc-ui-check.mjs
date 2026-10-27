@@ -56,6 +56,31 @@ await sleep(3000)
 comprueba(await visible('#vCuenta'), 'first start without account shows «¿Cómo quieres entrar?»')
 shot('ui-1-cuenta')
 
+// ---- Phase 4: «Cuenta Microsoft» opens Microsoft's sign-in page in our window (nobody signs in here) ----
+const evalEn = (target, expr) => new Promise((res, rej) => {
+  const s = new WebSocket(target.webSocketDebuggerUrl)
+  s.onerror = rej
+  s.onopen = () => s.send(JSON.stringify({ id: 1, method: 'Runtime.evaluate', params: { expression: expr, returnByValue: true } }))
+  s.onmessage = (e) => { const m = JSON.parse(e.data); if (m.id === 1) { s.close(); res(m.result?.result?.value) } }
+})
+await ev(`document.getElementById('btnMicrosoft').click()`)
+let ms = null
+let msInfo = null
+for (let i = 0; i < 20 && !msInfo?.campo; i++) {
+  await sleep(3000)
+  try {
+    const ts = await (await fetch('http://127.0.0.1:9222/json')).json()
+    ms = ts.find((t) => /login\.(microsoftonline|live)\.com/.test(t.url))
+    if (ms) msInfo = JSON.parse(await evalEn(ms, `JSON.stringify({ url: location.href, campo: !!document.querySelector('input[type=email], input[name=loginfmt]'), aadsts: /AADSTS\\d+/.exec(document.body.innerText || '')?.[0] || '' })`))
+  } catch { /* page still loading */ }
+}
+comprueba(!!msInfo?.campo && !msInfo.aadsts, `«Cuenta Microsoft» opens Microsoft's sign-in page with our app (${msInfo ? msInfo.url.split('?')[0] + (msInfo.aadsts ? ' error ' + msInfo.aadsts : '') : 'no window'})`)
+informe.push('INFO Microsoft window URL: ' + (ms ? ms.url.slice(0, 300) : '-'))
+shot('ui-1b-microsoft')
+execFileSync('adb', ['shell', 'input', 'keyevent', 'KEYCODE_BACK'])
+await sleep(2500)
+comprueba(await visible('#vCuenta'), 'back from the Microsoft window cancels and returns to «¿Cómo quieres entrar?»')
+
 await ev(`document.getElementById('btnNoPremium').click()`)
 await sleep(800)
 comprueba(await visible('#npNombre'), 'No Premium shows the name field')
@@ -143,6 +168,28 @@ execFileSync('adb', ['shell', 'input', 'keyevent', 'KEYCODE_BACK'])
 await sleep(1500)
 comprueba(await ev(`document.visibilityState === 'visible' && !document.getElementById('vInicio').hidden`), 'back from FCL home brings our screens back')
 shot('ui-7-vuelta')
+
+// ---- Phase 5: a newer app on our website is offered, downloaded, checked and handed to Android's installer ----
+await ev(`SC.debug('debug_app_manifest_url', 'http://10.0.2.2:8000/sc-app.json')`)
+await ev(`SC.buscarActualizacion()`)
+let oferta = false
+for (let s = 0; s < 30 && !oferta; s += 2) { await sleep(2000); oferta = await visible('#velo') && (await ev(`document.getElementById('dlgTitulo').textContent`)) === 'Nueva versión de la app' }
+comprueba(oferta, 'a newer app version on the website is offered («Nueva versión de la app»)')
+shot('ui-8b-app-nueva')
+let instalador = ''
+if (oferta) {
+  await ev(`document.getElementById('dlgSi').click()`)
+  for (let s = 0; s < 180 && !instalador; s += 3) {
+    await sleep(3000)
+    const top = execFileSync('adb', ['shell', 'dumpsys', 'activity', 'activities']).toString().split('\n').filter((l) => /ResumedActivity/.test(l)).join(' ')
+    instalador = /packageinstaller/i.test(top) ? top.trim().slice(0, 160) : ''
+    if (!instalador && await visible('#avisoError')) { informe.push('     error card: ' + await ev(`document.getElementById('errTitulo').textContent + ' · ' + document.getElementById('errTexto').textContent`)); break }
+  }
+}
+comprueba(!!instalador, `«Actualizar» downloads the APK, checks it and opens Android's installer (${instalador || 'not opened'})`)
+shot('ui-8c-instalador')
+if (instalador) { execFileSync('adb', ['shell', 'input', 'keyevent', 'KEYCODE_BACK']); await sleep(2500) }
+await ev(`SC.debug('debug_app_manifest_url', '')`)
 
 comprueba(errores.length === 0, `no JS errors (${errores.length})`)
 

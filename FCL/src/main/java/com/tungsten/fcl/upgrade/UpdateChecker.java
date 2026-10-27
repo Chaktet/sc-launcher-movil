@@ -84,6 +84,11 @@ public class UpdateChecker {
     }
 
     public Task<?> check(Context context, boolean showBeta, boolean showAlert) {
+        // SC: FCL-Team's version map would offer FCL itself to our players; our app updates from our own website
+        // (com.tungsten.fcl.sc.ScAppUpdate)
+        if (com.tungsten.fcl.sc.ScAppUpdate.REPLACES_FCL_UPDATER) {
+            return Task.runAsync(() -> {});
+        }
         if (!checking.compareAndSet(false, true)) {
             return Task.runAsync(() -> {});
         }

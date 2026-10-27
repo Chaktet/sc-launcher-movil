@@ -210,6 +210,7 @@
 
   pintarCuenta()
   cargarEstado(); cargarNovedades()
+  if (SC.buscarActualizacion) SC.buscarActualizacion() // a newer app on our website is offered in a dialog
   setInterval(pintarEvento, 30000)
   setInterval(cargarEstado, 120000)
 })()

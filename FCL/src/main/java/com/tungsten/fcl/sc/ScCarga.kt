@@ -37,6 +37,7 @@ object ScCarga {
     /** «Cancelar» / «Reintentar» of the screen: stops the launch (cargaFin follows from onStop). */
     fun cancelar() { actualExecutor?.cancel() }
 
+    @JvmStatic
     fun adjuntar(executor: TaskExecutor) {
         actualExecutor = executor
         val inicio = System.currentTimeMillis()

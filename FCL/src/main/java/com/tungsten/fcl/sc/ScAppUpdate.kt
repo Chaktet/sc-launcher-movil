@@ -3,6 +3,8 @@ package com.tungsten.fcl.sc
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.content.pm.PackageInfo
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
@@ -14,6 +16,7 @@ import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.logging.Level
 
 /**
@@ -66,10 +69,15 @@ object ScAppUpdate {
         }
     }
 
+    private val busy = AtomicBoolean(false)
+    private const val MAX_APK = 300L * 1024 * 1024
+
     /** Background thread. Downloads the pending APK (with progress in our page) and opens Android's installer. */
     fun downloadAndInstall(activity: MainActivity) {
         val p = pending ?: return
+        if (!busy.compareAndSet(false, true)) return // one download/install at a time
         try {
+            if (p.size <= 0 || p.size > MAX_APK) throw ScError("No se pudo actualizar", "La nueva versión anunciada no es válida.")
             val dir = File(activity.cacheDir, "sc-app").apply { mkdirs() }
             dir.listFiles()?.filter { !it.name.contains(p.versionName) }?.forEach { it.delete() }
             val apk = File(dir, "SC-Launcher-${p.versionName}.apk")
@@ -89,6 +97,7 @@ object ScAppUpdate {
                             while (true) {
                                 val n = inp.read(buf)
                                 if (n < 0) break
+                                if (total + n > p.size) throw ScError("Descarga dañada", "La nueva versión llegó dañada. Vuelve a intentarlo.")
                                 out.write(buf, 0, n)
                                 total += n
                                 val pct = (total * 100 / p.size).toInt()
@@ -99,6 +108,9 @@ object ScAppUpdate {
                             }
                         }
                     }
+                } catch (e: Exception) {
+                    part.delete()
+                    throw e
                 } finally {
                     c.disconnect()
                 }
@@ -109,6 +121,7 @@ object ScAppUpdate {
                 apk.delete()
                 if (!part.renameTo(apk)) throw ScError("No se pudo guardar", "No se pudo guardar la nueva versión.")
             }
+            verifyApk(activity, apk, p)
             ScUi.js("scApp.listo()")
             activity.runOnUiThread { openInstaller(activity, apk) }
         } catch (e: ScError) {
@@ -116,14 +129,47 @@ object ScAppUpdate {
         } catch (e: Exception) {
             Logging.LOG.log(Level.WARNING, "SC app update failed", e)
             ScUi.js("scApp.error('No se pudo actualizar la app', 'Revisa tu conexión y vuelve a intentarlo.')")
+        } finally {
+            busy.set(false)
         }
+    }
+
+    /**
+     * The downloaded APK must be this same app (package), signed with the same certificate as the installed one,
+     * and exactly the announced version, newer than ours. Otherwise it is deleted and never shown to the installer.
+     */
+    private fun verifyApk(c: Context, apk: File, p: Pending) {
+        val pm = c.packageManager
+        val flags = if (Build.VERSION.SDK_INT >= 28) PackageManager.GET_SIGNING_CERTIFICATES else @Suppress("DEPRECATION") PackageManager.GET_SIGNATURES
+        val archive = pm.getPackageArchiveInfo(apk.path, flags)
+        val mine = pm.getPackageInfo(c.packageName, flags)
+        val ok = archive != null && archive.packageName == c.packageName &&
+            versionCode(archive) == p.versionCode && p.versionCode > currentVersionCode(c) &&
+            certs(archive).let { it.isNotEmpty() && it == certs(mine) }
+        if (!ok) {
+            apk.delete()
+            throw ScError("Actualización no válida", "La nueva versión no está firmada por el servidor. No se ha instalado nada.")
+        }
+    }
+
+    private fun versionCode(info: PackageInfo): Long =
+        if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else @Suppress("DEPRECATION") info.versionCode.toLong()
+
+    private fun certs(info: PackageInfo): Set<String> {
+        val sigs = if (Build.VERSION.SDK_INT >= 28) {
+            val s = info.signingInfo ?: return emptySet()
+            if (s.hasMultipleSigners()) s.apkContentsSigners else s.signingCertificateHistory
+        } else @Suppress("DEPRECATION") info.signatures
+        return sigs.orEmpty().map { sig ->
+            MessageDigest.getInstance("SHA-256").digest(sig.toByteArray()).joinToString("") { "%02x".format(it) }
+        }.toSet()
     }
 
     private fun openInstaller(activity: MainActivity, apk: File) {
         if (Build.VERSION.SDK_INT >= 26 && !activity.packageManager.canRequestPackageInstalls()) {
-            // Android asks once to allow installing from this app; after that the user presses «Actualizar» again
-            ScUi.js("scApp.dialogo('Permite instalar la actualización', 'Android te pedirá permitir que SC Launcher instale actualizaciones. Actívalo, vuelve y pulsa «Actualizar» otra vez.', '', 'Entendido', '')")
+            // Android asks once to allow installing from this app; the verified APK stays, «Continuar» goes on with it
             activity.startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + activity.packageName)))
+            ScUi.js("scApp.dialogo('Permite instalar la actualización', 'Activa «Permitir de esta fuente» para SC Launcher, vuelve aquí y pulsa Continuar.', 'Más tarde', 'Continuar', 'actualizarApp')")
             return
         }
         val uri = FileProvider.getUriForFile(activity, activity.packageName + ".provider", apk)

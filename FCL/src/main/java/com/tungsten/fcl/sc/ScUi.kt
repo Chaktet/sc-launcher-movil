@@ -102,6 +102,7 @@ object ScUi {
 
     @JvmStatic
     fun detach() {
+        ScMicrosoft.cancel()
         webView?.destroy()
         webView = null
     }

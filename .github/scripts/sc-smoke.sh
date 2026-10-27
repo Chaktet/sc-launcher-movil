@@ -71,8 +71,8 @@ adb shell screencap -p /sdcard/s.png && adb pull /sdcard/s.png evidence/debug-0-
 adb forward tcp:9222 "localabstract:webview_devtools_remote_$PID"
 # Test update of the modpack, served from the runner (the emulator reaches the host at 10.0.2.2)
 python3 .github/scripts/sc-pack-ci.py packci || { echo "::error::could not build the test pack"; exit 1; }
-# Test app update (phase 5): a manifest offering this same debug APK as a much newer version
-cp "$APK" packci/app-ci.apk
+# Test app update (phase 5): a manifest offering the same debug build as a much newer version (versionCode 999999)
+cp apk/debugci/*.apk packci/app-ci.apk
 printf '{"versionCode":999999,"versionName":"9.9.9-ci","notas":"Prueba de CI.","apks":{"x86_64":{"url":"http://10.0.2.2:8000/app-ci.apk","sha256":"%s","size":%s}}}\n' \
   "$(sha256sum packci/app-ci.apk | cut -d' ' -f1)" "$(stat -c %s packci/app-ci.apk)" > packci/sc-app.json
 adb shell appops set "$PKG" REQUEST_INSTALL_PACKAGES allow

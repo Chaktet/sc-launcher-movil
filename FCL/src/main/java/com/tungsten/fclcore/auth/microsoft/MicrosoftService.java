@@ -94,8 +94,7 @@ public class MicrosoftService {
         try {
             // SC: our Entra app (the desktop launcher's) rejects the device code flow; sign in with the code flow in
             // an in-app window instead (com.tungsten.fcl.sc.ScMicrosoft)
-            OAuth.Result result = com.tungsten.fcl.sc.ScMicrosoft.OAUTH.authenticate(OAuth.GrantFlow.AUTHORIZATION_CODE,
-                    new OAuth.Options(SCOPE, com.tungsten.fcl.sc.ScMicrosoft.CALLBACK));
+            OAuth.Result result = com.tungsten.fcl.sc.ScMicrosoft.authenticate(SCOPE);
             return authenticateViaLiveAccessToken(result.accessToken(), result.refreshToken(), progressCallback);
         } catch (IOException e) {
             throw new ServerDisconnectException(e);

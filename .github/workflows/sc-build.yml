@@ -66,7 +66,14 @@ jobs:
         if: matrix.arch == 'x86_64'
         env:
           OAUTH_API_KEY: ${{ secrets.OAUTH_API_KEY }}
-        run: ./gradlew assembleDebug -Darch=x86_64 --no-daemon
+        run: |
+          ./gradlew assembleDebug -Darch=x86_64 --no-daemon
+          # The same debug build as a much newer version: the emulator test offers it as an app update
+          mkdir -p "$RUNNER_TEMP/dbg" && cp FCL/build/outputs/apk/debug/*.apk "$RUNNER_TEMP/dbg/"
+          ./gradlew assembleDebug -Darch=x86_64 -PscVersionCode=999999 -PscVersionName=9.9.9-ci --no-daemon
+          mkdir -p FCL/build/outputs/apk/debugci && mv FCL/build/outputs/apk/debug/*9.9.9-ci*.apk FCL/build/outputs/apk/debugci/
+          rm -f FCL/build/outputs/apk/debug/*.apk && cp "$RUNNER_TEMP/dbg/"*.apk FCL/build/outputs/apk/debug/
+          ls -la FCL/build/outputs/apk/*/
 
       - name: Check signature and package
         run: |

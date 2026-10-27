@@ -1,0 +1,139 @@
+<!doctype html>
+<!-- SC Launcher (Android) · in-game menu (Codex design 27-10, approved by Felix), shown by ScMenuJuego over the game
+     instead of FCL's drawers. Every option is applied with FCL's own handler (GameMenu.scAccion via SCM). -->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<link rel="stylesheet" href="sc.css">
+<style>
+  html, body { background: transparent !important; }
+  body::before { display: none; }
+  #fuera { position: fixed; inset: 0; background: rgba(0, 0, 0, .4); }
+  #panel { position: fixed; right: 8px; top: 8px; bottom: 8px; width: min(392px, 46vw); display: flex; flex-direction: column;
+    background: var(--pk-paper); box-shadow: inset 0 0 0 3px var(--pk-ink), inset 0 0 0 5px var(--pk-tab), 0 3px 0 var(--pk-ink); clip-path: var(--pk-corner-8); padding: 4px; }
+  #cabMenu { height: 44px; flex: none; display: flex; align-items: center; justify-content: space-between; background: var(--pk-red); padding: 0 0 0 12px; box-shadow: inset 0 0 0 3px var(--pk-ink); }
+  #cabMenu h1 { font: 400 18px/24px var(--pk-font-pixel); color: var(--pk-cream); text-transform: uppercase; }
+  #btnCerrar { width: 44px; height: 44px; font: 700 22px/1 var(--pk-font-body); color: var(--pk-ink); background: var(--pk-tab); box-shadow: inset 0 0 0 3px var(--pk-ink); }
+  #tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; flex: none; margin-top: 4px; }
+  #tabs button { height: 44px; font: 700 14px/1 var(--pk-font-body); background: var(--pk-tab); color: var(--pk-ink); box-shadow: inset 0 0 0 2px var(--pk-ink), inset 0 3px 0 rgba(255,255,255,.5); }
+  #tabs button[aria-current] { background: var(--pk-blue-deep); color: #fff; box-shadow: inset 0 0 0 2px var(--pk-ink), inset 0 -4px 0 var(--pk-gold); }
+  .seccion { flex: 1; min-height: 0; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+  .seccion[hidden] { display: none; }
+  .fila { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; font: 700 15px/18px var(--pk-font-body); color: var(--pk-ink); }
+  .fila.apagada { opacity: .45; }
+  .bloque { display: flex; flex-direction: column; gap: 4px; }
+  .bloque .fila { min-height: 22px; }
+  .ayudita { font: 400 12px/15px var(--pk-font-body); color: var(--pk-muted); }
+  .accion { min-height: 44px; width: 100%; display: flex; align-items: center; gap: 10px; padding: 0 14px; font: 700 15px/1 var(--pk-font-body);
+    background: var(--pk-tab); color: var(--pk-ink); box-shadow: inset 0 0 0 3px var(--pk-ink), inset 0 4px 0 rgba(255,255,255,.45); clip-path: var(--pk-corner-4); text-align: left; }
+  .accion::after { content: '▶'; margin-left: auto; font-size: 12px; }
+  .accion.azul { background: var(--pk-blue-deep); color: #fff; }
+  .accion.roja { background: var(--pk-red); color: var(--pk-cream); margin-top: auto; }
+  input[type=range] { width: 100%; height: 28px; -webkit-appearance: none; background: transparent; }
+  input[type=range]::-webkit-slider-runnable-track { height: 10px; background: var(--pk-ink); box-shadow: inset 0 0 0 2px var(--pk-ink); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 26px; margin-top: -8px; background: var(--pk-cream); box-shadow: inset 0 0 0 3px var(--pk-ink); }
+  input[type=range]:disabled { opacity: .45; }
+  .interruptor { position: relative; width: 64px; height: 34px; flex: none; }
+  .interruptor input { position: absolute; inset: 0; opacity: 0; margin: 0; }
+  .interruptor span { position: absolute; inset: 0; background: #B9C2CC; box-shadow: inset 0 0 0 3px var(--pk-ink); border-radius: 17px; pointer-events: none; }
+  .interruptor span::after { content: ''; position: absolute; left: 4px; top: 4px; width: 26px; height: 26px; border-radius: 50%; background: #fff; box-shadow: inset 0 0 0 3px var(--pk-ink); transition: left .15s; }
+  .interruptor input:checked + span { background: var(--pk-blue-deep); }
+  .interruptor input:checked + span::after { left: 34px; }
+  #confirma { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.5); }
+  #confirma[hidden] { display: none; }
+  #confirma > div { width: min(420px, 80vw); padding: 18px; background: var(--pk-paper); box-shadow: inset 0 0 0 3px var(--pk-ink); clip-path: var(--pk-corner-8); display: flex; flex-direction: column; gap: 14px; font: 700 16px/21px var(--pk-font-body); }
+  #confirma .botones { display: flex; justify-content: flex-end; gap: 10px; }
+</style>
+</head>
+<body>
+<div id="fuera"></div>
+<div id="panel" role="dialog" aria-label="Menú de juego">
+  <div id="cabMenu"><h1>Menú de juego</h1><button id="btnCerrar" type="button" aria-label="Cerrar menú">✕</button></div>
+  <nav id="tabs">
+    <button data-s="controles" aria-current="page" type="button">Controles</button>
+    <button data-s="camara" type="button">Cámara</button>
+    <button data-s="imagen" type="button">Imagen</button>
+    <button data-s="ayuda" type="button">Ayuda</button>
+  </nav>
+  <section class="seccion" id="s-controles">
+    <button class="accion azul" id="btnEditar" type="button">✎ Editar botones</button>
+    <div class="bloque"><div class="fila"><span>Transparencia de los botones</span><span id="vTransp"></span></div><input id="rTransp" type="range" min="0" max="90" step="1"></div>
+    <label class="fila">Ocultar botones<span class="interruptor"><input id="sOcultar" type="checkbox"><span></span></span></label>
+    <button class="accion" id="btnRestaurar" type="button">↺ Restaurar botones del servidor</button>
+    <label class="fila">Tocar la pantalla<br>para atacar/usar<span class="interruptor"><input id="sGestos" type="checkbox"><span></span></span></label>
+  </section>
+  <section class="seccion" id="s-camara" hidden>
+    <div class="bloque"><div class="fila"><span>Sensibilidad</span><span id="vSens"></span></div><input id="rSens" type="range" min="25" max="300" step="1"></div>
+    <label class="fila">Giroscopio<span class="interruptor"><input id="sGiro" type="checkbox"><span></span></span></label>
+    <div class="bloque" id="bGiroSens"><div class="fila"><span>Sensibilidad del giroscopio</span><span id="vGiro"></span></div><input id="rGiro" type="range" min="10" max="300" step="10"></div>
+  </section>
+  <section class="seccion" id="s-imagen" hidden>
+    <div class="bloque"><div class="fila"><span>Calidad de imagen</span><span id="vCal"></span></div><input id="rCal" type="range" min="25" max="100" step="1"><span class="ayudita">menos = más fluido</span></div>
+    <label class="fila">Mostrar FPS<span class="interruptor"><input id="sFps" type="checkbox"><span></span></span></label>
+    <label class="fila">Mostrar memoria<span class="interruptor"><input id="sMem" type="checkbox"><span></span></span></label>
+  </section>
+  <section class="seccion" id="s-ayuda" hidden>
+    <button class="accion" id="btnRegistro" type="button">▤ Ver registro del juego</button>
+    <button class="accion" id="btnAvanzadas" type="button">⚙ Opciones avanzadas</button>
+    <button class="accion roja" id="btnSalir" type="button">⇥ Salir del juego</button>
+  </section>
+</div>
+<div id="confirma" hidden><div><span id="confTexto"></span><div class="botones"><button class="btn" id="confNo" type="button">Cancelar</button><button class="btn btnAzul" id="confSi" type="button">Sí</button></div></div></div>
+<script>
+(function () {
+  'use strict'
+  const $ = (id) => document.getElementById(id)
+  const M = window.SCM || { estado: () => '{}', accion () {}, cerrar () {}, editar () {}, avanzadas () {}, restaurar: () => true, salir () {} }
+  const der = (tipo, tag, v) => M.accion('der', tipo, tag, String(v))
+  const izq = (tipo, tag, v) => M.accion('izq', tipo, tag, String(v))
+  let e = {}
+  function pinta () {
+    try { e = JSON.parse(M.estado() || '{}') } catch (x) { e = {} }
+    const transp = 100 - (e.opacidad != null ? e.opacidad : 100)
+    $('rTransp').value = transp; $('vTransp').textContent = transp + ' %'
+    $('sOcultar').checked = !!e.ocultar
+    $('sGestos').checked = e.gestos !== false
+    $('rSens').value = e.sensibilidad || 100; $('vSens').textContent = (e.sensibilidad || 100) + ' %'
+    $('sGiro').checked = !!e.giro
+    $('rGiro').value = e.giroSens || 100; $('vGiro').textContent = (e.giroSens || 100) + ' %'
+    $('rGiro').disabled = !e.giro; $('bGiroSens').classList.toggle('apagada', !e.giro)
+    $('rCal').value = e.calidad || 100; $('vCal').textContent = (e.calidad || 100) + ' %'
+    $('sFps').checked = !!e.fps
+    $('sMem').checked = !!e.memoria
+  }
+  document.querySelectorAll('#tabs button').forEach((b) => b.onclick = () => {
+    document.querySelectorAll('#tabs button').forEach((x) => x.toggleAttribute('aria-current', x === b))
+    for (const s of ['controles', 'camara', 'imagen', 'ayuda']) $('s-' + s).hidden = s !== b.dataset.s
+  })
+  const cerrar = () => M.cerrar()
+  $('fuera').onclick = cerrar
+  $('btnCerrar').onclick = cerrar
+  $('btnEditar').onclick = () => M.editar()
+  // FCL stores opacity (100 = solid); the design shows transparency
+  $('rTransp').oninput = () => { $('vTransp').textContent = $('rTransp').value + ' %'; izq('slider', 'CONTROLS_OPACITY', 100 - Number($('rTransp').value)) }
+  $('sOcultar').onchange = () => izq('switch', 'HIDE_ALL', $('sOcultar').checked ? 1 : 0)
+  $('sGestos').onchange = () => der('switch', 'DISABLE_GESTURE', $('sGestos').checked ? 0 : 1)
+  $('rSens').oninput = () => { $('vSens').textContent = $('rSens').value + ' %'; der('slider', 'MOUSE_SENSITIVITY', $('rSens').value) }
+  $('sGiro').onchange = () => { der('switch', 'GYRO', $('sGiro').checked ? 1 : 0); $('rGiro').disabled = !$('sGiro').checked; $('bGiroSens').classList.toggle('apagada', !$('sGiro').checked) }
+  $('rGiro').oninput = () => { $('vGiro').textContent = $('rGiro').value + ' %'; der('slider', 'GYRO_SENSITIVITY_X', $('rGiro').value); der('slider', 'GYRO_SENSITIVITY_Y', $('rGiro').value) }
+  $('rCal').onchange = () => der('slider', 'WINDOW_SCALE', $('rCal').value)
+  $('rCal').oninput = () => { $('vCal').textContent = $('rCal').value + ' %' }
+  $('sFps').onchange = () => der('switch', 'SHOW_FPS', $('sFps').checked ? 1 : 0)
+  $('sMem').onchange = () => der('switch', 'SHOW_MEMORY', $('sMem').checked ? 1 : 0)
+  $('btnRegistro').onclick = () => { der('switch', 'SHOW_LOG', e.registro ? 0 : 1); e.registro = !e.registro; cerrar() }
+  $('btnAvanzadas').onclick = () => M.avanzadas()
+  function confirma (texto, si, alSi) {
+    $('confTexto').textContent = texto; $('confSi').textContent = si; $('confirma').hidden = false
+    $('confSi').onclick = () => { $('confirma').hidden = true; alSi() }
+    $('confNo').onclick = () => { $('confirma').hidden = true }
+  }
+  $('btnRestaurar').onclick = () => confirma('¿Volver a los botones del servidor? Tus cambios en los botones se guardan aparte. Se aplica al volver a entrar al juego.', 'Restaurar',
+    () => { $('btnRestaurar').textContent = M.restaurar() ? '✓ Se aplicará al volver a entrar' : 'No se pudo restaurar' })
+  $('btnSalir').onclick = () => confirma('¿Seguro? Se cerrará el juego.', 'Salir', () => M.salir())
+  window.scMenu = { refrescar: pinta }
+  pinta()
+})()
+</script>
+</body>
+</html>

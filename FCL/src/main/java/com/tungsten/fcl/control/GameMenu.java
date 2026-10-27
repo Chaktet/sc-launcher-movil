@@ -1564,4 +1564,49 @@ public class GameMenu implements MenuCallback, FCLBridgeCallback {
     public TouchController getTouchController() {
         return touchController;
     }
+    // ---- SC: our in-game menu (ScMenuJuego, Codex design approved 27-10) drives FCL's own option handlers ----
+
+    /** Applies one option of our menu with FCL's handler for it. clase: izq/der, tipo: switch/slider/boton. */
+    public void scAccion(String clase, String tipo, String tag, String valor) {
+        if ("izq".equals(clase)) {
+            LeftMenuTag t = LeftMenuTag.valueOf(tag);
+            if ("switch".equals(tipo)) handleLeftSwitchToggle(t, "1".equals(valor));
+            else if ("slider".equals(tipo)) handleLeftSeekBarChange(t, Integer.parseInt(valor));
+            else handleLeftButtonClick(t);
+        } else {
+            RightMenuTag t = RightMenuTag.valueOf(tag);
+            if ("switch".equals(tipo)) handleRightSwitchToggle(t, "1".equals(valor));
+            else if ("slider".equals(tipo)) handleRightSeekBarChange(t, Integer.parseInt(valor));
+            else handleRightButtonClick(t);
+        }
+    }
+
+    /** Current values for our menu, in the units FCL's own sliders use. */
+    public String scEstado() {
+        try {
+            return new org.json.JSONObject()
+                    .put("editar", isEditMode())
+                    .put("opacidad", menuSetting.getControlsOpacity())
+                    .put("ocultar", isHideAllViews())
+                    .put("gestos", !menuSetting.isDisableGesture())
+                    .put("sensibilidad", (int) Math.round(menuSetting.getMouseSensitivity() * 100))
+                    .put("giro", menuSetting.isEnableGyroscope())
+                    .put("giroSens", menuSetting.getGyroscopeSensitivityX() * 10)
+                    .put("calidad", (int) Math.round(menuSetting.getWindowScale() * 100))
+                    .put("fps", menuSetting.isShowFps())
+                    .put("memoria", menuSetting.isShowMemory())
+                    .put("registro", menuSetting.isShowLog())
+                    .toString();
+        } catch (org.json.JSONException e) {
+            return "{}";
+        }
+    }
+
+    /** «Opciones avanzadas»: FCL's full menu (both drawers), as its own button did. */
+    public void scAbrirAvanzadas() {
+        if (layout instanceof DrawerLayout) {
+            ((DrawerLayout) layout).openDrawer(GravityCompat.START, true);
+            ((DrawerLayout) layout).openDrawer(GravityCompat.END, true);
+        }
+    }
 }

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SC: in-game menu button (Codex design 27-10): red lens with navy pixel ring and a highlight -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp" android:height="96dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#16233E" android:pathData="M8,1h8v1h2v1h1v1h1v1h1v2h1v10h-1v2h-1v1h-1v1h-1v1h-2v1H8v-1H6v-1H5v-1H4v-1H3v-2H2V7h1V5h1V4h1V3h1V2h2z"/>
+    <path android:fillColor="#FBF7E9" android:pathData="M8,3h8v1h2v1h1v2h1v10h-1v2h-1v1h-2v1H8v-1H6v-1H5v-2H4V7h1V5h1V4h2z"/>
+    <path android:fillColor="#B22839" android:pathData="M9,5h6v1h2v1h1v2h1v6h-1v2h-1v1h-2v1H9v-1H7v-1H6v-2H5V9h1V7h1V6h2z"/>
+    <path android:fillColor="#E8B84A" android:pathData="M9,7h3v1h1v2h-1v1H9v-1H8V8h1z"/>
+    <path android:fillColor="#FFFFFF" android:pathData="M9,8h2v1H9z"/>
+</vector>

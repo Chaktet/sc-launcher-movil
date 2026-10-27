@@ -118,7 +118,12 @@ class MenuView @JvmOverloads constructor(
                 })
         }
         if (!isGif && icon == null) {
-            icon = BitmapFactory.decodeResource(context.resources, R.drawable.img_app)
+            // SC: our lens instead of the FCL logo (Codex design 27-10)
+            icon = androidx.core.content.ContextCompat.getDrawable(context, R.drawable.sc_menu_lente)?.let { d ->
+                android.graphics.Bitmap.createBitmap(192, 192, android.graphics.Bitmap.Config.ARGB_8888).also { b ->
+                    d.setBounds(0, 0, 192, 192); d.draw(android.graphics.Canvas(b))
+                }
+            } ?: BitmapFactory.decodeResource(context.resources, R.drawable.img_app)
         }
     }
 
@@ -182,7 +187,9 @@ class MenuView @JvmOverloads constructor(
                     && event.eventTime - downTime <= ViewConfiguration.getLongPressTimeout()
                 ) {
                     performClick()
-                    (gameMenu.layout as DrawerLayout).apply {
+                    // SC: our menu (ScMenuJuego) instead of FCL's drawers; «Opciones avanzadas» still opens them
+                    if (com.tungsten.fcl.sc.ScMenuJuego.ACTIVO) com.tungsten.fcl.sc.ScMenuJuego.abrir(gameMenu.activity, gameMenu)
+                    else (gameMenu.layout as DrawerLayout).apply {
                         openDrawer(GravityCompat.START, true)
                         openDrawer(GravityCompat.END, true)
                     }

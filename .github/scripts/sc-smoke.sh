@@ -84,7 +84,8 @@ cp .github/scripts/fake-authorize.html packci/
 MS_URL="https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?client_id=1ce6e35a-126f-48fd-97fb-54d143ac6d45&response_type=code&redirect_uri=https%3A%2F%2Flogin.microsoftonline.com%2Fcommon%2Foauth2%2Fnativeclient&scope=XboxLive.signin%20offline_access&prompt=select_account&state=ci$RANDOM$RANDOM&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256"
 MS_CODE=$(curl -sL -A "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36" -o evidence/microsoft-authorize.html -w '%{http_code} %{url_effective}' "$MS_URL")
 echo "Microsoft authorize: $MS_CODE" | tee -a evidence/apk.txt
-if grep -qo "AADSTS[0-9]*" evidence/microsoft-authorize.html || ! grep -qi "loginfmt\|login.live.com" evidence/microsoft-authorize.html; then
+# Accepted = HTTP 200 on Microsoft's consumer sign-in form (login.live.com/oauth20_authorize.srf) and no AADSTS error
+if grep -qo "AADSTS[0-9]*" evidence/microsoft-authorize.html || ! echo "$MS_CODE" | grep -q "^200 https://login.live.com/oauth20_authorize.srf"; then
   echo "::error::Microsoft's sign-in page refuses the app's request: $(grep -o 'AADSTS[0-9]*[^<]*' evidence/microsoft-authorize.html | head -1)"
   FALLO=1
 fi
@@ -102,4 +103,6 @@ echo "$FALLO" > evidence/resultado.txt
 adb emu kill >/dev/null 2>&1 || true
 sleep 10
 pkill -9 -f qemu-system >/dev/null 2>&1 || true
+# Without this the action's own «adb emu kill» waits on the dead emulator until the step times out
+adb kill-server >/dev/null 2>&1 || true
 exit 0

@@ -14,6 +14,19 @@
 - Pendiente: quitar Terracotta/VPN y permisos sobrantes, textos legales de FCL, CurseForge, licencias/NOTICE; Java 8/17/25
   van en el APK sin usarse (solo hace falta el 21: ~60 MB menos y primer arranque más rápido).
 
+## 2026-10-27 noche · 0.1.5, 0.1.6 y 0.1.7 publicadas (sin prueba larga, Felix las prueba a mano)
+- 0.1.5: las actualizaciones del modpack ya no usan ModpackUpdateTask de FCL (copiaba la instancia entera a
+  `.minecraft/backup` en un solo paso «0 / 1» y nunca borraba las copias); se usa ModrinthInstallTask directo y se borran
+  las copias viejas.
+- 0.1.6: auto-actualización con PackageInstaller (USER_ACTION_NOT_REQUIRED en Android 12+: tras la primera, sin preguntar);
+  comprueba al abrir, al volver y cada 30 min; con wifi descarga e instala sola, con datos pregunta; `ScActualizada`
+  reabre la app (o notificación). Barra táctil de objetos: tamaño calculado bien (antes 0x0 → escala 1).
+- 0.1.7: esquema de botones de Codex aprobado por Felix (+ ◀ ▶ junto a la barra, barra táctil más alta); generado por
+  `.github/scripts/monta-controles.js`, layout 1400.
+- Móvil PRO lleva ahora el SC-Pack de PC entero (receta 2, igual md5 que el launcher de PC), con sc-armor3d y pantallas de PC.
+- Publicar: `scripts/publica-app.sh <run> <versión> <code> "<notas>"` (APK + sc-app.json + Cloudflare + tag + release).
+- Pendiente: pantallas propias en lugar de las de FCL (carga con barra real, paso, «no cierres la app», tiempo restante).
+
 ## 2026-10-27 tarde · 0.1.4 publicada (0.1.1-0.1.3 nunca salieron)
 - Felix pasó dos fallos de jugadores con la 0.1.0: «No se pudo preparar el juego · …/SC Cobblemon/modpack.cfg» (una
   primera instalación cortada deja la instancia sin modpack.cfg; FCL además se niega a instalar encima: ahora se borra

@@ -80,6 +80,8 @@ class ScBridge(private val activity: MainActivity, private val webView: WebView)
         o.put("renderer", s.renderer)
         o.put("idioma", LocaleUtils.getLanguage(activity))
         o.put("pack", ScPack.installedVersion(activity) ?: "")
+        o.put("perfil", ScPack.profile(activity))
+        o.put("perfilInstalado", ScPack.installedProfile(activity))
         o.toString()
     }
 
@@ -189,6 +191,7 @@ class ScBridge(private val activity: MainActivity, private val webView: WebView)
                 "ram" -> valor.toIntOrNull()?.let { s.maxMemory = it.coerceIn(512, MemoryUtils.getTotalDeviceMemory(activity)) }
                 "ramAuto" -> s.isAutoMemory = valor == "1"
                 "renderer" -> if (RendererManager.rendererList.any { it.id == valor }) s.renderer = valor
+                "perfil" -> ScPack.setProfile(activity, valor)
                 "idioma" -> valor.toIntOrNull()?.let {
                     LocaleUtils.changeLanguage(activity, it)
                     // FCL's own screens pick the language up on the next start; ours are always in Spanish.
@@ -202,7 +205,7 @@ class ScBridge(private val activity: MainActivity, private val webView: WebView)
     @JavascriptInterface
     fun debug(clave: String, valor: String) {
         if ((activity.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) == 0) return
-        if (clave !in setOf("debug_manifest_url", "debug_no_launch", "debug_app_manifest_url", "debug_ms_authorize_url", "debug_no_server")) return
+        if (clave !in setOf("debug_manifest_url", "debug_no_launch", "debug_app_manifest_url", "debug_ms_authorize_url", "debug_no_server", "debug_manifest_pro_url")) return
         val e = activity.getSharedPreferences("sc", android.content.Context.MODE_PRIVATE).edit()
         if (clave == "debug_no_launch" || clave == "debug_no_server") e.putBoolean(clave, valor == "1") else e.putString(clave, valor)
         e.apply()

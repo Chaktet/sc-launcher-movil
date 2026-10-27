@@ -37,9 +37,23 @@ import java.util.zip.ZipFile
 object ScPack {
     const val INSTANCE = "SC Cobblemon"
     const val SERVER = "mc.servidorcobblemon.es"
-    private const val MANIFEST_URL = "https://descargas.servidorcobblemon.es/movil/sc-pack.json"
     private const val PREFS = "sc"
     private const val KEY_VERSION = "pack_version"
+    private const val KEY_PROFILE = "perfil"               // the profile the player picked in Ajustes
+    private const val KEY_INSTALLED_PROFILE = "pack_perfil" // the profile the installed pack belongs to
+
+    /**
+     * The two phone modpacks (Felix 27-10): «Móvil», the light default, and «Móvil PRO», the PC PRO set without the
+     * desktop-only mods (built on the website by movil_pro.js). Both install into the same instance, so switching is a
+     * pack update: the mods of the other profile go, options.txt and the worlds, screenshots and controls stay.
+     */
+    const val PROFILE_LIGHT = "movil"
+    const val PROFILE_PRO = "pro"
+    private val MANIFESTS = mapOf(
+        PROFILE_LIGHT to "https://descargas.servidorcobblemon.es/movil/sc-pack.json",
+        PROFILE_PRO to "https://descargas.servidorcobblemon.es/movil/sc-pack-pro.json"
+    )
+    private val DEBUG_MANIFEST_KEYS = mapOf(PROFILE_LIGHT to "debug_manifest_url", PROFILE_PRO to "debug_manifest_pro_url")
     private val ALLOWED_PACK_HOSTS = setOf("descargas.servidorcobblemon.es")
     private val ALLOWED_FILE_HOSTS = setOf("cdn.modrinth.com", "descargas.servidorcobblemon.es")
     private val OVERRIDE_DIRS = listOf("overrides/", "client-overrides/")
@@ -63,6 +77,19 @@ object ScPack {
 
     fun installedVersion(context: Context): String? =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_VERSION, null)
+
+    /** Installs from before the profiles (0.1.0) have the light pack. */
+    fun installedProfile(context: Context): String =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_INSTALLED_PROFILE, null) ?: PROFILE_LIGHT
+
+    fun profile(context: Context): String =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_PROFILE, null)?.takeIf { it in MANIFESTS } ?: PROFILE_LIGHT
+
+    /** The new profile is installed on the next JUGAR. */
+    fun setProfile(context: Context, profile: String) {
+        if (profile !in MANIFESTS) return
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY_PROFILE, profile).apply()
+    }
 
     /** JUGAR: makes sure the pack is current (installing/updating it if needed) and then launches the game. */
     fun playWhenReady(activity: MainActivity, forceRepair: Boolean = false) {
@@ -93,8 +120,9 @@ object ScPack {
         if (!repo.isLoaded) repo.refreshVersions()
         ui("Comprobando el modpack…", -1)
 
-        val debugUrl = debugPrefs(activity)?.getString("debug_manifest_url", null)?.takeIf { it.isNotBlank() }
-        val manifest = runCatching { fetchManifest(debugUrl) }.getOrElse {
+        val perfil = profile(activity)
+        val debugUrl = debugPrefs(activity)?.getString(DEBUG_MANIFEST_KEYS.getValue(perfil), null)?.takeIf { it.isNotBlank() }
+        val manifest = runCatching { fetchManifest(MANIFESTS.getValue(perfil), debugUrl) }.getOrElse {
             Logging.LOG.log(Level.WARNING, "SC pack: manifest not reachable", it)
             null
         }
@@ -108,14 +136,14 @@ object ScPack {
             throw ScError("Sin conexión", "Hace falta internet para descargar el modpack la primera vez.")
         }
 
-        if (!hasInstance || installed != manifest.version) {
+        if (!hasInstance || installed != manifest.version || installedProfile(activity) != perfil) {
             val mrpack = download(manifest)
             val runDir = repo.getRunDirectory(INSTANCE)
             val playerOptions = if (hasInstance) readOptions(File(runDir, "options.txt")) else null
             install(profile, mrpack, update = hasInstance)
             verifyFiles(mrpack, runDir)
             playerOptions?.let { mergeOptions(File(runDir, "options.txt"), it) }
-            activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY_VERSION, manifest.version).apply()
+            activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY_VERSION, manifest.version).putString(KEY_INSTALLED_PROFILE, perfil).apply()
             File(FCLPath.CACHE_DIR).listFiles { f -> f.name.startsWith("sc-pack-") }?.forEach { if (it != mrpack) it.delete() }
         } else if (forceRepair) {
             verifyFiles(download(manifest), repo.getRunDirectory(INSTANCE))
@@ -141,8 +169,8 @@ object ScPack {
         f.writeText(fromPack.values.joinToString("\n", postfix = "\n"), StandardCharsets.UTF_8)
     }
 
-    private fun fetchManifest(debugUrl: String?): Manifest {
-        val j = JSONObject(httpText(debugUrl ?: MANIFEST_URL))
+    private fun fetchManifest(url: String, debugUrl: String?): Manifest {
+        val j = JSONObject(httpText(debugUrl ?: url))
         val m = Manifest(j.getString("version"), j.getString("url"), j.getString("sha256").lowercase(), j.getLong("size"))
         val u = URL(m.url)
         require(debugUrl != null || (u.protocol == "https" && u.host in ALLOWED_PACK_HOSTS)) { "pack URL not allowed: ${m.url}" }

@@ -54,7 +54,10 @@
     $('avatarCabeza').hidden = false
     $('verBadge').textContent = 'v' + (estado.versionApp || '')
     $('verApp').textContent = estado.versionApp || ''
-    $('perfilDetalle').textContent = estado.pack ? ('Modpack ' + estado.pack) : 'Se instala al pulsar JUGAR'
+    const nombrePerfil = (p) => p === 'pro' ? 'Móvil PRO' : 'Móvil'
+    $('perfilDetalle').textContent = !estado.pack ? 'Se instala al pulsar JUGAR'
+      : estado.perfil !== estado.perfilInstalado ? (nombrePerfil(estado.perfil) + ' · se instala al pulsar JUGAR')
+      : ('Modpack ' + nombrePerfil(estado.perfilInstalado) + ' ' + estado.pack.split('-')[0])
     pintarAjustes()
     mostrar('vInicio')
   }
@@ -104,12 +107,23 @@
     for (const x of estado.renderers || []) { const o = document.createElement('option'); o.value = x.id; o.textContent = x.nombre; sel.appendChild(o) }
     sel.value = estado.renderer || ''
     $('selIdioma').value = String(estado.idioma || 12)
+    $('selPerfil').value = estado.perfil || 'movil'
   }
   $('ramSlider').oninput = () => { $('ramValor').textContent = $('ramSlider').value + ' MB' }
   $('ramSlider').onchange = () => SC.ajuste('ram', $('ramSlider').value)
   $('ramAuto').onchange = () => { SC.ajuste('ramAuto', $('ramAuto').checked ? '1' : '0'); estado = leerEstado(); pintarAjustes() }
   $('selRender').onchange = () => SC.ajuste('renderer', $('selRender').value)
   $('selIdioma').onchange = () => SC.ajuste('idioma', $('selIdioma').value)
+  // Switching modpack: installed on the next JUGAR (same instance, so settings, controls and worlds stay)
+  $('selPerfil').onchange = () => {
+    const pro = $('selPerfil').value === 'pro'
+    SC.ajuste('perfil', $('selPerfil').value)
+    setTimeout(pintarCuenta, 150)
+    dialogo(pro ? 'Móvil PRO' : 'Móvil',
+      (pro ? 'Más mods y animaciones, como el PRO del ordenador. Pide un móvil potente y tarda más en cargar. '
+           : 'El modpack ligero, el que mejor va en la mayoría de móviles. ') +
+      'Se instalará al pulsar JUGAR; tus ajustes, controles y opciones se conservan.', '', 'Entendido', null)
+  }
 
   // ---- Dialog ----
   function dialogo(titulo, texto, no, si, alSi) {

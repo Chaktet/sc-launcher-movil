@@ -21,6 +21,7 @@ import java.security.MessageDigest
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.logging.Level
+import java.util.zip.CRC32
 import java.util.zip.ZipFile
 
 /**
@@ -41,6 +42,7 @@ object ScPack {
     private const val KEY_VERSION = "pack_version"
     private val ALLOWED_PACK_HOSTS = setOf("descargas.servidorcobblemon.es")
     private val ALLOWED_FILE_HOSTS = setOf("cdn.modrinth.com", "descargas.servidorcobblemon.es")
+    private val OVERRIDE_DIRS = listOf("overrides/", "client-overrides/")
 
     private val running = AtomicBoolean(false)
 
@@ -260,6 +262,50 @@ object ScPack {
             dest.delete()
             if (!tmp.renameTo(dest)) throw ScError("No se pudo guardar", "No se pudo guardar ${dest.name}.")
         }
+        verifyOverrides(mrpack, root)
+    }
+
+    /**
+     * Files shipped inside the .mrpack (overrides/), not in the download list: our mobile pack carries Cobblemon,
+     * sc-avisos-cliente and the resource pack this way. Only mods/ and resourcepacks/ are checked (size + CRC-32 from
+     * the zip) and restored from the .mrpack itself; configs and options.txt belong to the player and are left alone.
+     */
+    private fun verifyOverrides(mrpack: File, root: File) {
+        ZipFile(mrpack).use { z ->
+            val entries = z.entries().toList().filter { e ->
+                !e.isDirectory && OVERRIDE_DIRS.any { d -> e.name.startsWith(d) } &&
+                    e.name.substringAfter('/').let { it.startsWith("mods/") || it.startsWith("resourcepacks/") }
+            }
+            entries.forEachIndexed { i, e ->
+                val rel = e.name.substringAfter('/')
+                val dest = File(root, rel).canonicalFile
+                if (!dest.path.startsWith(root.path + File.separator)) throw ScError("Modpack no válido", "Ruta no permitida: $rel")
+                ui("Comprobando archivos…", i * 100 / entries.size, dest.name)
+                if (dest.isFile && dest.length() == e.size && crc32(dest) == e.crc) return@forEachIndexed
+                val tmp = File(dest.path + ".sc-tmp")
+                dest.parentFile?.mkdirs()
+                z.getInputStream(e).use { inp -> tmp.outputStream().use { inp.copyTo(it, 64 * 1024) } }
+                if (tmp.length() != e.size || crc32(tmp) != e.crc) {
+                    tmp.delete()
+                    throw ScError("Modpack dañado", "${dest.name} está dañado en el modpack. Vuelve a intentarlo.")
+                }
+                dest.delete()
+                if (!tmp.renameTo(dest)) throw ScError("No se pudo guardar", "No se pudo guardar ${dest.name}.")
+            }
+        }
+    }
+
+    private fun crc32(f: File): Long {
+        val c = CRC32()
+        f.inputStream().use { inp ->
+            val buf = ByteArray(64 * 1024)
+            while (true) {
+                val n = inp.read(buf)
+                if (n < 0) break
+                c.update(buf, 0, n)
+            }
+        }
+        return c.value
     }
 
     /** Selects our instance and points it at the server (quickPlay: JUGAR enters the server directly). */

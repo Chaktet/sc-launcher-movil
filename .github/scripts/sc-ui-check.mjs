@@ -6,10 +6,13 @@ import { writeFileSync } from 'node:fs'
 
 const pkg = process.argv[2]
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+// A failed screenshot (the emulator's GPU can die while the game renders) must not lose the rest of the report
 const shot = (name) => {
-  execFileSync('adb', ['shell', 'screencap', '-p', '/sdcard/ui.png'])
-  execFileSync('adb', ['pull', '/sdcard/ui.png', `evidence/${name}.png`])
-  console.log('screenshot', name)
+  try {
+    execFileSync('adb', ['shell', 'screencap', '-p', '/sdcard/ui.png'], { timeout: 30000 })
+    execFileSync('adb', ['pull', '/sdcard/ui.png', `evidence/${name}.png`], { timeout: 30000 })
+    console.log('screenshot', name)
+  } catch (e) { console.log('screenshot', name, 'FAILED:', e.message.split('\n')[0]) }
 }
 
 let targets = []
@@ -40,7 +43,13 @@ const ev = async (expr) => {
 await call('Runtime.enable')
 
 const informe = []
-const comprueba = (cond, msg) => { informe.push((cond ? 'OK   ' : 'FAIL ') + msg); if (!cond) process.exitCode = 1 }
+// The report is written after every check, so a later crash or hang never hides what already passed or failed
+const comprueba = (cond, msg) => {
+  informe.push((cond ? 'OK   ' : 'FAIL ') + msg)
+  if (!cond) process.exitCode = 1
+  console.log((cond ? 'OK   ' : 'FAIL ') + msg)
+  writeFileSync('evidence/ui-check.txt', informe.join('\n') + '\n')
+}
 const visible = (sel) => ev(`(() => { const e = document.querySelector(${JSON.stringify(sel)}); return !!e && !e.closest('[hidden]') && e.getBoundingClientRect().height > 0 })()`)
 
 await sleep(3000)
@@ -148,6 +157,9 @@ for (let s = 0; s < 120 && !jvm; s += 5) {
 }
 comprueba(jvm, 'JUGAR starts the game (JVMActivity in front)')
 await sleep(60000)
+const logJuego = execFileSync('adb', ['logcat', '-d'], { maxBuffer: 256 * 1024 * 1024 }).toString()
+const caida = logJuego.match(/Incompatible mods found|Mod discovery failed|Error analyzing \[[^\]]*\]|OpenJDK exited with code : \d+/g)
+comprueba(!caida, `the game is still running 60 s after JUGAR (Fabric found the mods)${caida ? ': ' + [...new Set(caida)].join(' · ') : ''}`)
 shot('ui-9-juego')
 const log = adb('sh', '-c', `"tail -c 20000 '${run}/logs/latest.log' 2>/dev/null; ls /sdcard/SCLauncher/log 2>/dev/null"`)
 writeFileSync('evidence/juego-latest.log', log + '\n')

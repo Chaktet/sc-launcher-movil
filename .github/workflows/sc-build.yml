@@ -127,7 +127,8 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Install and launch in the emulator
-        timeout-minutes: 60
+        timeout-minutes: 50
+        continue-on-error: true
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
@@ -146,3 +147,8 @@ jobs:
           path: |
             evidence/
           retention-days: 14
+
+      - name: Result of the emulator test
+        run: |
+          cat evidence/ui-check.txt 2>/dev/null || true
+          test "$(cat evidence/resultado.txt 2>/dev/null)" = "0" || { echo "::error::emulator test failed or did not finish (evidence/resultado.txt)"; exit 1; }

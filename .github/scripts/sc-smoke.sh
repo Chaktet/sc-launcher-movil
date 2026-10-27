@@ -79,4 +79,10 @@ if grep -A3 "FATAL EXCEPTION" evidence/debug-logcat.txt | grep -q "$PKG"; then
   echo "::error::debug: the app crashed"; grep -A20 "FATAL EXCEPTION" evidence/debug-logcat.txt | head -40; FALLO=1
 fi
 [ $FALLO -eq 0 ] && echo "SMOKE OK"
-exit $FALLO
+# The result is kept in a file and judged by a later step: the emulator has hung on shutdown after the game ran,
+# and that must not decide (or stall) the job. Kill it ourselves.
+echo "$FALLO" > evidence/resultado.txt
+adb emu kill >/dev/null 2>&1 || true
+sleep 10
+pkill -9 -f qemu-system >/dev/null 2>&1 || true
+exit 0

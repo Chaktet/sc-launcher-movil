@@ -157,7 +157,13 @@ object ScPack {
             // FCL's update needs it («No se pudo preparar el juego · …/modpack.cfg», seen 27-10): install it from
             // scratch over the folder instead, with a clean mods/ so nothing of the half install stays
             val update = hasInstance && repo.getModpackConfiguration(INSTANCE).isFile
-            if (hasInstance && !update) File(runDir, "mods").deleteRecursively()
+            if (hasInstance && !update) {
+                File(runDir, "mods").deleteRecursively()
+                // FCL refuses to install over a version that has no modpack.cfg («Version … already exists», CI 27-10):
+                // its version file goes too, so it installs as new; options.txt and the rest of the folder stay
+                repo.getVersionJson(INSTANCE).delete()
+                repo.refreshVersions()
+            }
             install(profile, mrpack, update = update)
             verifyFiles(mrpack, runDir)
             playerOptions?.let { mergeOptions(File(runDir, "options.txt"), it) }

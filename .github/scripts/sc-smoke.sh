@@ -50,14 +50,23 @@ adb shell "run-as $PKG sh -c 'cat > shared_prefs/launcher.xml'" <<'XML'
 </map>
 XML
 adb logcat -c
-adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null
-# Wait for MainActivity (the runtimes are unpacked on first start; that can take a few minutes on the emulator)
-for i in $(seq 1 60); do
-  adb shell dumpsys activity activities | grep -q "mResumedActivity.*MainActivity\|topResumedActivity.*MainActivity" && break
-  sleep 5
+# Right after boot Google Play services restarts itself, and Android kills any app using its font provider with it
+# (seen in CI: "depends on provider ... FontsProvider in dying proc"). Let it settle, and relaunch once if that happens.
+sleep 60
+PID=""
+for intento in 1 2 3; do
+  adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null
+  # Wait for MainActivity (the runtimes are unpacked on first start; that can take a few minutes on the emulator)
+  for i in $(seq 1 60); do
+    adb shell dumpsys activity activities | grep -q "mResumedActivity.*MainActivity\|topResumedActivity.*MainActivity" && break
+    sleep 5
+  done
+  sleep 15
+  PID=$(adb shell pidof "$PKG" | tr -d '\r')
+  [ -n "$PID" ] && break
+  echo "launch $intento: the app died right after starting, relaunching" | tee -a evidence/apk.txt
 done
 adb shell screencap -p /sdcard/s.png && adb pull /sdcard/s.png evidence/debug-0-tras-arranque.png >/dev/null
-PID=$(adb shell pidof "$PKG" | tr -d '\r')
 [ -n "$PID" ] || { echo "::error::debug app not running"; adb logcat -d > evidence/debug-logcat.txt; exit 1; }
 adb forward tcp:9222 "localabstract:webview_devtools_remote_$PID"
 # Test update of the modpack, served from the runner (the emulator reaches the host at 10.0.2.2)

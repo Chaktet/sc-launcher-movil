@@ -146,7 +146,11 @@ select.campo { background: var(--pk-tab) url("data:image/svg+xml,%3Csvg xmlns='h
 #panelJugar { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); grid-template-rows: auto 1fr; align-items: center; column-gap: 14px; row-gap: 6px; padding: 10px 14px; min-height: 0; }
 #regiones { padding-right: 12px; border-right: 2px solid var(--pk-tab); min-width: 0; }
 #listaRegiones { display: flex; flex-direction: column; }
-.region { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; align-items: center; gap: 6px; font: 400 14px/20px var(--pk-font-body); }
+/* one line per region; on narrow phones only the number of players is shown, never text on top of text */
+.region { display: grid; grid-template-columns: 10px auto 1fr; align-items: center; gap: 6px; font: 400 14px/20px var(--pk-font-body); }
+.region span { white-space: nowrap; text-align: right; }
+.region .regJug { font-size: inherit; }
+@media (max-width: 720px) { .region .regJug { display: none; } }
 .region::before { content: ''; width: 8px; height: 8px; background: var(--pk-offer); }
 .region.off::before { background: var(--pk-red); }
 .region b { font-weight: 700; }

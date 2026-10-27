@@ -146,7 +146,12 @@
       for (const r of j.regiones || []) {
         const fila = document.createElement('div'); fila.className = 'region' + (r.online ? '' : ' off')
         const n = document.createElement('b'); n.textContent = r.nombre
-        const v = document.createElement('span'); v.textContent = r.online ? (r.jugadores + ' jugadores') : 'Reiniciando'
+        const v = document.createElement('span')
+        if (r.online) {
+          v.textContent = String(r.jugadores)
+          const t = document.createElement('small'); t.className = 'regJug'; t.textContent = ' jugadores'; v.appendChild(t)
+          v.title = r.jugadores + ' jugadores'
+        } else v.textContent = 'Reinicio'
         fila.append(n, v); caja.appendChild(fila)
       }
       eventos = [...(j.eventos || []), ...(j.fijos || [])].filter((e) => e && e.inicio)

@@ -250,7 +250,7 @@ comprueba(!caida, `the game is still running 60 s after JUGAR (Fabric found the 
 shot('ui-9-juego')
 const log = adb('sh', '-c', `"tail -c 20000 '${run}/logs/latest.log' 2>/dev/null; ls /sdcard/SCLauncher/log 2>/dev/null"`)
 writeFileSync('evidence/juego-latest.log', log + '\n')
-const argsOk = /quickPlayMultiplayer|mc\.servidorcobblemon\.es/.test(execFileSync('adb', ['logcat', '-d']).toString() + log)
+const argsOk = /quickPlayMultiplayer|mc\.servidorcobblemon\.es/.test(execFileSync('adb', ['logcat', '-d'], { maxBuffer: 256 * 1024 * 1024 }).toString() + log)
 informe.push('INFO ' + `server address seen in the game start logs: ${argsOk}`)
 const texto = informe.join('\n') + (errores.length ? '\n\n' + errores.join('\n') : '')
 writeFileSync('evidence/ui-check.txt', texto + '\n')

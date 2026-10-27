@@ -105,9 +105,18 @@ object ScPack {
                     else if (!noLaunch) activity.scLaunch()
                 }
             } catch (e: ScError) {
+                // no notice for being offline: that is the player's connection, not something we can fix
+                val codigo = when {
+                    e.titulo == "Sin conexión" -> null
+                    e.titulo == "Falta espacio" -> ScAvisos.SIN_ESPACIO
+                    forceRepair -> ScAvisos.REPARAR
+                    else -> ScAvisos.INSTALAR
+                }
+                codigo?.let { ScAvisos.enviar(activity, it, mapOf("k" to e.titulo.lowercase().replace(Regex("[^a-z]+"), "_").trim('_').take(40))) }
                 ScUi.js("scApp.error(${JSONObject.quote(e.titulo)}, ${JSONObject.quote(e.texto)})")
             } catch (e: Throwable) {
                 Logging.LOG.log(Level.WARNING, "SC pack: unexpected error", e)
+                ScAvisos.enviar(activity, ScAvisos.INESPERADO, mapOf("n" to ScAvisos.clase(e)))
                 ScUi.js("scApp.error('No se pudo preparar el juego', ${JSONObject.quote(e.message ?: e.javaClass.simpleName)})")
             } finally {
                 running.set(false)
@@ -277,13 +286,26 @@ object ScPack {
         })
         // registered once executor exists (the speed timer fires every second from its own thread); kept in a local
         // so the weak registration lives until the install ends
-        val speedHandler = java.util.function.Consumer<FetchTask.SpeedEvent> { e -> runCatching { speed.set(e.speed); paint() } }
+        // a download that stays at 0 B/s for 3 minutes is reported once (SC-41), with the step it stopped at
+        val movido = java.util.concurrent.atomic.AtomicLong(System.currentTimeMillis())
+        val avisado = AtomicBoolean(false)
+        val speedHandler = java.util.function.Consumer<FetchTask.SpeedEvent> { e ->
+            runCatching {
+                speed.set(e.speed); paint()
+                val ahora = System.currentTimeMillis()
+                if (e.speed > 0) movido.set(ahora)
+                else if (ahora - movido.get() > 180_000 && avisado.compareAndSet(false, true))
+                    MainActivity.getInstance()?.let { ScAvisos.enviar(it, ScAvisos.DESCARGA_PARADA, mapOf("s" to "$finished-${executor.taskCount}")) }
+            }
+        }
         FetchTask.speedEvent.channel(FetchTask.SpeedEvent::class.java).registerWeak(speedHandler)
         executor.start()
         latch.await()
         FetchTask.speedEvent.channel(FetchTask.SpeedEvent::class.java).unregister(speedHandler)
         if (!ok) {
             Logging.LOG.log(Level.WARNING, "SC pack: install/update failed", error)
+            // the class of FCL's failure says what broke (download, disk, bad file); the ScError below adds SC-40
+            error?.let { err -> MainActivity.getInstance()?.let { ScAvisos.enviar(it, ScAvisos.INSTALAR, mapOf("n" to ScAvisos.clase(err))) } }
             throw ScError(if (update) "No se pudo actualizar" else "No se pudo instalar",
                 "Ha fallado la instalación del modpack. Vuelve a intentarlo; si sigue fallando, usa «Reparar archivos».")
         }
@@ -397,6 +419,10 @@ object ScPack {
                 profile.selectedVersion = INSTANCE
                 profile.repository.specializeVersionSetting(INSTANCE)?.let { vs ->
                     if (vs.serverIp != server) vs.serverIp = server
+                    // the game's own notices (sc-avisos-cliente) follow the app's switch, as -Dsc.avisos does on the PC
+                    val avisos = "-Dsc.avisos=" + (if (MainActivity.getInstance()?.let { ScAvisos.activo(it) } != false) "1" else "0")
+                    val args = (vs.javaArgs.split(Regex("\\s+")).filter { it.isNotBlank() && !it.startsWith("-Dsc.avisos=") } + avisos).joinToString(" ")
+                    if (vs.javaArgs != args) vs.javaArgs = args
                 }
             } finally {
                 latch.countDown()

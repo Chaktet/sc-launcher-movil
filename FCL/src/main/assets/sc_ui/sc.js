@@ -108,12 +108,14 @@
     sel.value = estado.renderer || ''
     $('selIdioma').value = String(estado.idioma || 12)
     $('selPerfil').value = estado.perfil || 'movil'
+    $('chkAvisos').checked = estado.avisos !== false
   }
   $('ramSlider').oninput = () => { $('ramValor').textContent = $('ramSlider').value + ' MB' }
   $('ramSlider').onchange = () => SC.ajuste('ram', $('ramSlider').value)
   $('ramAuto').onchange = () => { SC.ajuste('ramAuto', $('ramAuto').checked ? '1' : '0'); estado = leerEstado(); pintarAjustes() }
   $('selRender').onchange = () => SC.ajuste('renderer', $('selRender').value)
   $('selIdioma').onchange = () => SC.ajuste('idioma', $('selIdioma').value)
+  $('chkAvisos').onchange = () => SC.ajuste('avisos', $('chkAvisos').checked ? '1' : '0')
   // Switching modpack: installed on the next JUGAR (same instance, so settings, controls and worlds stay)
   $('selPerfil').onchange = () => {
     const pro = $('selPerfil').value === 'pro'

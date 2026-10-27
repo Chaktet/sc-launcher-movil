@@ -82,6 +82,7 @@ class ScBridge(private val activity: MainActivity, private val webView: WebView)
         o.put("pack", ScPack.installedVersion(activity) ?: "")
         o.put("perfil", ScPack.profile(activity))
         o.put("perfilInstalado", ScPack.installedProfile(activity))
+        o.put("avisos", ScAvisos.activo(activity))
         o.toString()
     }
 
@@ -192,6 +193,7 @@ class ScBridge(private val activity: MainActivity, private val webView: WebView)
                 "ramAuto" -> s.isAutoMemory = valor == "1"
                 "renderer" -> if (RendererManager.rendererList.any { it.id == valor }) s.renderer = valor
                 "perfil" -> ScPack.setProfile(activity, valor)
+                "avisos" -> ScAvisos.setActivo(activity, valor == "1")
                 "idioma" -> valor.toIntOrNull()?.let {
                     LocaleUtils.changeLanguage(activity, it)
                     // FCL's own screens pick the language up on the next start; ours are always in Spanish.

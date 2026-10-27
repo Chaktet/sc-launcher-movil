@@ -236,8 +236,8 @@ comprueba(errores.length === 0, `no JS errors (${errores.length})`)
 // Real launch: the game process starts with quickPlay to our server. The emulator has no real GPU, so reaching the
 // server is only reported (it is checked on real phones in phase 6); the launch itself must happen.
 // ---- Phase 6: the two phone modpacks. PRO is installed over the light one, the light one back (PRO's mods must go),
-// and the game below runs PRO, which tells which of its mods start on Android. The PRO file is a test copy. ----
-const PRO = 'https://descargas.servidorcobblemon.es/movil/prueba/sc-pack-pro.json'
+// and the game below runs PRO, which tells which of its mods start on Android. ----
+const PRO = 'https://descargas.servidorcobblemon.es/movil/sc-pack-pro.json'
 const pro = await (await fetch(PRO + '?t=' + Date.now())).json()
 const listaMods = () => adb('ls', `'${run}/mods'`).split('\n').filter((x) => x.endsWith('.jar'))
 const elige = async (perfil) => {

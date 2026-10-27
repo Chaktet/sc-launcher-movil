@@ -140,6 +140,9 @@ object ScPack {
             val mrpack = download(manifest)
             val runDir = repo.getRunDirectory(INSTANCE)
             val playerOptions = if (hasInstance) readOptions(File(runDir, "options.txt")) else null
+            // From here the instance is half one pack, half the other until this finishes: forget what was installed,
+            // so a failure (or going back to the old profile) installs again instead of launching a mix
+            activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove(KEY_VERSION).remove(KEY_INSTALLED_PROFILE).commit()
             install(profile, mrpack, update = hasInstance)
             verifyFiles(mrpack, runDir)
             playerOptions?.let { mergeOptions(File(runDir, "options.txt"), it) }

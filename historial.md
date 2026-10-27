@@ -1,20 +1,33 @@
 # Historial · SC Launcher Móvil
 
 ## Estado actual
-- Fases 0-5 en `main` (cb84a4fa): pantallas PokéNav (WebView `assets/sc_ui` encima de MainActivity), modpack
-  automático + JUGAR directo al servidor (`ScPack`), login Microsoft en ventana propia (`ScMicrosoft`, código +
-  PKCE + state, redirección `nativeclient`, ID de Helios), auto-actualización desde nuestra web (`ScAppUpdate`,
-  `movil/app/sc-app.json`; el actualizador de FCL está apagado).
-- CI (`.github/scripts/sc-ui-check.mjs`) comprueba 30 cosas en el emulador: pantallas, ventana Microsoft (con página
-  local de prueba: el emulador se congela con la real; la real se comprueba desde el runner), instalar 2.4.x,
-  actualizar sin perder `options.txt`, reparar un Cobblemon roto, oferta + descarga + instalador de la app, juego
-  arrancado 60 s. Informe en el artefacto `emulator-evidence/ui-check.txt`.
-- NO comprobado aún: un login Microsoft real (lo hace Felix en su móvil, fase 6) y entrar al servidor desde un móvil
-  real (el emulador no tiene GPU real).
-- Microsoft: app propia en Azure `b02d1916-762f-4732-ad9e-f10fc0a71fe9`, solicitud a Mojang enviada 26-10 (respuesta a
-  darksens96@hotmail.com). Al aprobarse: cambiar `OAUTH_API_KEY` (y el launcher de PC) a ese ID.
-- Pendiente: fase 6 (móviles reales), quitar Terracotta/VPN y permisos sobrantes, textos legales/anuncios de FCL,
-  CurseForge, revisión de licencias/NOTICE. Cada actualización del modpack baja 143 MB (el resource pack va dentro).
+- Publicada la **0.1.4** (27-10, versionCode 5): pantallas PokéNav, modpack automático con dos perfiles (Ajustes ›
+  «Modpack Móvil / PRO»; `movil/sc-pack.json` y `movil/sc-pack-pro.json`, este último lo rehace solo
+  `movil_pro.js` en descargas-auto), login Microsoft (código + PKCE), auto-actualización (`movil/app/sc-app.json`),
+  botones táctiles del servidor (Pokémon/M, Lanzar/R, Poké ▲▼), reinstalación de instalaciones cortadas, velocidad de
+  descarga, avisos anónimos SC-40..44.
+- Sacar versión: subir versionCode/versionName en `FCL/build.gradle.kts`, push a main (prueba rápida ~27 min), si pasa
+  etiqueta `vX.Y.Z` en ese commit, APK de los artefactos de ese run a `movil/app/` con nombre nuevo, `sc-app.json` al
+  final, comprobar por Cloudflare. Los cambios del modpack NO necesitan versión de la app.
+- NO comprobado aún: login Microsoft real, Móvil PRO en un móvil real, los menús «rotos» del S25 (esperando capturas).
+- Microsoft: app propia `b02d1916-762f-4732-ad9e-f10fc0a71fe9` pendiente de Mojang; al aprobarse, cambiar `OAUTH_API_KEY`.
+- Pendiente: quitar Terracotta/VPN y permisos sobrantes, textos legales de FCL, CurseForge, licencias/NOTICE; Java 8/17/25
+  van en el APK sin usarse (solo hace falta el 21: ~60 MB menos y primer arranque más rápido).
+
+## 2026-10-27 tarde · 0.1.4 publicada (0.1.1-0.1.3 nunca salieron)
+- Felix pasó dos fallos de jugadores con la 0.1.0: «No se pudo preparar el juego · …/SC Cobblemon/modpack.cfg» (una
+  primera instalación cortada deja la instancia sin modpack.cfg; FCL además se niega a instalar encima: ahora se borra
+  mods/ y el json de la versión y se instala de nuevo, options.txt se queda) y «se queda en 99 %» (los últimos pasos son
+  las descargas grandes: ahora se ve la velocidad). Avisos anónimos como en PC (`ScAvisos`, SC-40..44, `a=android`,
+  interruptor en Ajustes que también pone `-Dsc.avisos` al juego; tabla en sc-launcher/docs/ERRORES.md).
+- CI: prueba rápida en cada push (~27 min de comprobaciones; tope 45 min porque el emulador se cuelga al apagarse) y la
+  completa (Móvil PRO + juego 20 min) a mano (`prueba=completa`) o los domingos. La completa de 0.1.3 cazó el «already
+  exists»; la rápida de 43f10b32 pasó todo.
+- Publicado: tag v0.1.4 (43f10b32), GitHub Release, `movil/app/SC-Launcher-0.1.4-<abi>.apk` + `sc-app.json` versionCode 5
+  (copia `sc-app.json.bak-0.1.0`); los 3 APK bajados por Cloudflare coinciden en tamaño y sha256; `/descargas/android` → 0.1.4.
+  Novedad `2026-10-27-movil-app-0.1.4`; #actualizaciones publicado (lote de 6).
+- Pendiente: capturas de Felix de los menús «rotos» en el S25 (no se reproduce); un login Microsoft real; prueba de
+  Móvil PRO en un móvil real.
 
 ## 2026-10-27 · 0.1.1: Móvil PRO, teclas del servidor, prueba a tamaño de móvil
 - Felix probó la 0.1.0 en un S25 Ultra: carga lenta, menú principal y Opciones «rotos», sin forma de pulsar M (inicial),

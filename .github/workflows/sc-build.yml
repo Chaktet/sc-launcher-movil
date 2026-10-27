@@ -145,7 +145,8 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Install and launch in the emulator
-        timeout-minutes: 110
+        # the quick test's checks take ~27 min; the emulator can then hang on shutdown, so cap it close to that
+        timeout-minutes: ${{ env.SC_PRUEBA == 'completa' && 110 || 45 }}
         continue-on-error: true
         uses: reactivecircus/android-emulator-runner@v2
         with:

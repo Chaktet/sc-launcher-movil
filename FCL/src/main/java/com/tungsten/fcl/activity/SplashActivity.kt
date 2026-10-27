@@ -151,6 +151,7 @@ class SplashActivity : FCLActivity() {
             withContext(Dispatchers.IO) {
                 RendererManager.init(this@SplashActivity)
                 JavaManager.init()
+                com.tungsten.fcl.sc.ScControls.updateDefault() // SC: server keys in the default touch layout
                 Controllers.init()
                 runCatching { ConfigHolder.init() }.exceptionOrNull()?.let {
                     Logging.LOG.log(Level.WARNING, it.message)

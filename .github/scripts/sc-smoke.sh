@@ -7,6 +7,10 @@ set -u
 BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
 mkdir -p evidence
 FALLO=0
+# Same screen as the phone players reported problems on (Samsung S25 Ultra at its default FHD+): the game menus pick
+# their scale from the window size, so a small emulator screen would hide what players see
+adb shell wm size 2340x1080
+adb shell wm density 450
 
 alive_check() { # $1 = package, $2 = tag
   adb logcat -c

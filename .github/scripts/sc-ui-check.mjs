@@ -236,6 +236,8 @@ comprueba(errores.length === 0, `no JS errors (${errores.length})`)
 // Real launch: the game process starts with quickPlay to our server. The emulator has no real GPU, so reaching the
 // server is only reported (it is checked on real phones in phase 6); the launch itself must happen.
 await ev(`SC.debug('debug_no_launch', '0')`)
+// The game stops at its title screen: the menus are checked there, and the CI test account never joins the real server
+await ev(`SC.debug('debug_no_server', '1')`)
 await ev(`document.getElementById('btnJugar').click()`)
 let jvm = false
 for (let s = 0; s < 120 && !jvm; s += 5) {
@@ -243,15 +245,27 @@ for (let s = 0; s < 120 && !jvm; s += 5) {
   jvm = /JVMActivity/.test(execFileSync('adb', ['shell', 'dumpsys', 'activity', 'activities']).toString().split('\n').filter((l) => /ResumedActivity/.test(l)).join(' '))
 }
 comprueba(jvm, 'JUGAR starts the game (JVMActivity in front)')
+const tJuego = Date.now()
+const logcat = () => execFileSync('adb', ['logcat', '-d'], { maxBuffer: 256 * 1024 * 1024 }).toString()
+const leeLog = () => adb('sh', '-c', `"tail -c 200000 '${run}/logs/latest.log' 2>/dev/null"`)
 await sleep(60000)
-const logJuego = execFileSync('adb', ['logcat', '-d'], { maxBuffer: 256 * 1024 * 1024 }).toString()
-const caida = logJuego.match(/Incompatible mods found|Mod discovery failed|Error analyzing \[[^\]]*\]|OpenJDK exited with code : \d+/g)
+let caida = logcat().match(/Incompatible mods found|Mod discovery failed|Error analyzing \[[^\]]*\]|OpenJDK exited with code : \d+/g)
 comprueba(!caida, `the game is still running 60 s after JUGAR (Fabric found the mods)${caida ? ': ' + [...new Set(caida)].join(' · ') : ''}`)
-shot('ui-9-juego')
-const log = adb('sh', '-c', `"tail -c 20000 '${run}/logs/latest.log' 2>/dev/null; ls /sdcard/SCLauncher/log 2>/dev/null"`)
-writeFileSync('evidence/juego-latest.log', log + '\n')
-const argsOk = /quickPlayMultiplayer|mc\.servidorcobblemon\.es/.test(execFileSync('adb', ['logcat', '-d'], { maxBuffer: 256 * 1024 * 1024 }).toString() + log)
-informe.push('INFO ' + `server address seen in the game start logs: ${argsOk}`)
+// Loading on a phone-sized screen: a screenshot every minute shows when the title screen is ready and how it looks
+const tiempos = []
+for (let m = 1; m <= 14 && !caida; m++) {
+  shot(`ui-9-juego-${String(m).padStart(2, '0')}min`)
+  const l = leeLog()
+  tiempos.push(`${m} min: ${l.split('\n').filter(Boolean).length} lines, last: ${(l.trim().split('\n').pop() || '').slice(0, 160)}`)
+  writeFileSync('evidence/juego-tiempos.txt', tiempos.join('\n') + '\n')
+  if (m < 14) await sleep(60000)
+  caida = logcat().match(/OpenJDK exited with code : \d+/g)
+}
+writeFileSync('evidence/juego-latest.log', leeLog() + '\n')
+const lc = logcat()
+writeFileSync('evidence/juego-ventana.txt', (lc.match(/.*(--width|--height|windowScale|Window size|setScaleFactor|\d{3,4}x\d{3,4}).*/g) || []).filter((l) => /tungsten|fcl|Bridge|JVM|width/i.test(l)).slice(0, 60).join('\n') + '\n')
+comprueba(!/Failed to load view group|Failed to generate default controller/.test(lc), 'the touch layout with the server keys loads without errors')
+informe.push('INFO ' + `game watched for ${Math.round((Date.now() - tJuego) / 60000)} min after it started (see juego-tiempos.txt)`)
 const texto = informe.join('\n') + (errores.length ? '\n\n' + errores.join('\n') : '')
 writeFileSync('evidence/ui-check.txt', texto + '\n')
 console.log(texto)

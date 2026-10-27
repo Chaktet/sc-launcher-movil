@@ -104,7 +104,7 @@ object ScPack {
         if (manifest == null) {
             if (forceRepair) throw ScError("Sin conexión", "Hace falta internet para comprobar y reparar los archivos.")
             // Offline: playing is still possible with what is installed (the server will say if it is too old).
-            if (hasInstance && installed != null) { selectAndConfigure(); return }
+            if (hasInstance && installed != null) { selectAndConfigure(serverFor(activity)); return }
             throw ScError("Sin conexión", "Hace falta internet para descargar el modpack la primera vez.")
         }
 
@@ -120,7 +120,7 @@ object ScPack {
         } else if (forceRepair) {
             verifyFiles(download(manifest), repo.getRunDirectory(INSTANCE))
         }
-        selectAndConfigure()
+        selectAndConfigure(serverFor(activity))
     }
 
     /** options.txt as ordered key → line ("key:value"), or null when there is none. */
@@ -331,15 +331,22 @@ object ScPack {
         return c.value
     }
 
+    /**
+     * The server JUGAR enters. Debug builds only: debug_no_server makes the game stop at its title screen (the CI
+     * emulator checks the menus there and must not join the real server with its test account).
+     */
+    private fun serverFor(context: Context) =
+        if (debugPrefs(context)?.getBoolean("debug_no_server", false) == true) "" else SERVER
+
     /** Selects our instance and points it at the server (quickPlay: JUGAR enters the server directly). */
-    private fun selectAndConfigure() {
+    private fun selectAndConfigure(server: String) {
         val latch = CountDownLatch(1)
         Schedulers.androidUIThread().execute {
             try {
                 val profile = Profiles.getSelectedProfile()
                 profile.selectedVersion = INSTANCE
                 profile.repository.specializeVersionSetting(INSTANCE)?.let { vs ->
-                    if (vs.serverIp != SERVER) vs.serverIp = SERVER
+                    if (vs.serverIp != server) vs.serverIp = server
                 }
             } finally {
                 latch.countDown()

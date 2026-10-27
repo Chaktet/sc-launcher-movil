@@ -112,7 +112,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     # The emulator can hang on shutdown after the script has finished; never let that hold the runner for hours
-    timeout-minutes: 75
+    timeout-minutes: 95
     steps:
       - uses: actions/checkout@v6
         with:
@@ -134,7 +134,7 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Install and launch in the emulator
-        timeout-minutes: 35
+        timeout-minutes: 55
         continue-on-error: true
         uses: reactivecircus/android-emulator-runner@v2
         with:

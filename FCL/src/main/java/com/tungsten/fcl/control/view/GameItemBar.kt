@@ -53,7 +53,7 @@ class GameItemBar @JvmOverloads constructor(
             val autoSize = gameOption.getGuiScale(width, height, 0)
             notifySize(
                 if (gameMenu.menuSetting.itemBarWidth == 0) autoSize * 20 * 9 else gameMenu.menuSetting.itemBarWidth,
-                if (gameMenu.menuSetting.itemBarHeight == 0) autoSize * 20 else gameMenu.menuSetting.itemBarHeight
+                if (gameMenu.menuSetting.itemBarHeight == 0) autoSize * 32 else gameMenu.menuSetting.itemBarHeight // SC: taller than the drawn hotbar (Felix: easier to hit)
             )
             if (manually) {
                 restore?.let {

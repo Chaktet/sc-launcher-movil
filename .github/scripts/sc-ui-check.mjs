@@ -170,6 +170,8 @@ comprueba((await ev(`document.getElementById('perfilDetalle').textContent`)) ===
 
 // player data must survive an update
 adb('sh', '-c', `"echo sc_ci_option:1 >> '${run}/options.txt'"`)
+// and a first install cut short (no modpack.cfg, a leftover jar) must be installed again, not fail (seen 27-10)
+adb('sh', '-c', `"rm -f '${run}/modpack.cfg'; echo x > '${run}/mods/resto-ci.jar'"`)
 const ci = JSON.parse(execFileSync('cat', ['packci/sc-pack.json']).toString())
 await ev(`SC.debug('debug_manifest_url', 'http://10.0.2.2:8000/sc-pack.json')`)
 await ev(`document.getElementById('btnJugar').click()`)
@@ -179,6 +181,8 @@ comprueba(adb('cat', `'${run}/config/sc-ci-marker.txt'`).includes(ci.version), '
 comprueba(adb('cat', `'${run}/options.txt'`).includes('sc_ci_option:1'), "the player's options.txt survived the update")
 const mods2 = adb('ls', `'${run}/mods'`).split('\n').filter((x) => x.endsWith('.jar'))
 comprueba(mods2.length === mods.length, `mods still complete after the update (${mods2.length})`)
+comprueba(!mods2.includes('resto-ci.jar') && adb('sh', '-c', `"test -f '${run}/modpack.cfg' && echo si"`) === 'si',
+  'an instance without modpack.cfg (install cut short) is installed again cleanly')
 await ev(`SC.debug('debug_manifest_url', '')`)
 
 // repair: a broken mod is detected by its hash and downloaded again

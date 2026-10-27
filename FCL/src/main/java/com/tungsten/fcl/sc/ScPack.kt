@@ -143,7 +143,12 @@ object ScPack {
             // From here the instance is half one pack, half the other until this finishes: forget what was installed,
             // so a failure (or going back to the old profile) installs again instead of launching a mix
             activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove(KEY_VERSION).remove(KEY_INSTALLED_PROFILE).commit()
-            install(profile, mrpack, update = hasInstance)
+            // A first install cut short (app closed while it downloaded) leaves the instance without modpack.cfg, and
+            // FCL's update needs it («No se pudo preparar el juego · …/modpack.cfg», seen 27-10): install it from
+            // scratch over the folder instead, with a clean mods/ so nothing of the half install stays
+            val update = hasInstance && repo.getModpackConfiguration(INSTANCE).isFile
+            if (hasInstance && !update) File(runDir, "mods").deleteRecursively()
+            install(profile, mrpack, update = update)
             verifyFiles(mrpack, runDir)
             playerOptions?.let { mergeOptions(File(runDir, "options.txt"), it) }
             activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY_VERSION, manifest.version).putString(KEY_INSTALLED_PROFILE, perfil).apply()

@@ -155,7 +155,8 @@ jobs:
           target: google_apis
           disable-animations: true
           disk-size: 8G
-          ram-size: 4096M
+          # 6 GB, a common phone: the heap rule (ScMemoria) gives Móvil PRO its 4 GB here without the low-memory dialog
+          ram-size: 6144M
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           script: bash .github/scripts/sc-smoke.sh
 

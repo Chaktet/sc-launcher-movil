@@ -80,7 +80,7 @@ object ScMicrosoft {
                 MessageDigest.getInstance("SHA-256").digest(attempt.verifier.toByteArray(Charsets.US_ASCII)),
                 Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP
             )
-            val url = Uri.parse(AUTHORIZE).buildUpon()
+            val url = Uri.parse(debugAuthorize() ?: AUTHORIZE).buildUpon()
                 .appendQueryParameter("client_id", clientId())
                 .appendQueryParameter("response_type", "code")
                 .appendQueryParameter("redirect_uri", REDIRECT)
@@ -117,6 +117,17 @@ object ScMicrosoft {
     }
 
     private fun clientId(): String = Accounts.OAUTH_CALLBACK.clientId
+
+    /**
+     * Debug builds only (CI emulator, whose software GPU freezes on Microsoft's real page): a light local page that
+     * plays Microsoft's part and redirects to nativeclient with the state it was given. Release builds ignore it.
+     */
+    private fun debugAuthorize(): String? {
+        val c = MainActivity.getInstance() ?: return null
+        if ((c.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) == 0) return null
+        return c.getSharedPreferences("sc", android.content.Context.MODE_PRIVATE).getString("debug_ms_authorize_url", null)
+            ?.takeIf { it.isNotBlank() }
+    }
 
     private fun exchange(code: String, verifier: String, scope: String): OAuth.Result {
         val body = mapOf(

@@ -1,0 +1,15 @@
+<!doctype html>
+<!-- CI only: plays Microsoft's authorize page in the emulator (whose software GPU freezes on the real one). It shows
+     what the app asked for and, unless ?hold=1, redirects to nativeclient with a fake code and the same state. -->
+<meta charset="utf-8">
+<title>ci-authorize</title>
+<p>Microsoft (prueba de CI)</p>
+<input type="email" name="loginfmt">
+<script>
+  const q = new URLSearchParams(location.search)
+  window.scCi = { client: q.get('client_id'), redirect: q.get('redirect_uri'), challenge: q.get('code_challenge'),
+    method: q.get('code_challenge_method'), state: q.get('state'), scope: q.get('scope') }
+  if (!q.has('hold')) setTimeout(() => {
+    location.href = q.get('redirect_uri') + '?code=CI-FAKE-CODE&state=' + encodeURIComponent(q.get('state'))
+  }, 3000)
+</script>

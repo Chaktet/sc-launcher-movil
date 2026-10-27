@@ -202,7 +202,7 @@ class ScBridge(private val activity: MainActivity, private val webView: WebView)
     @JavascriptInterface
     fun debug(clave: String, valor: String) {
         if ((activity.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) == 0) return
-        if (clave !in setOf("debug_manifest_url", "debug_no_launch", "debug_app_manifest_url")) return
+        if (clave !in setOf("debug_manifest_url", "debug_no_launch", "debug_app_manifest_url", "debug_ms_authorize_url")) return
         val e = activity.getSharedPreferences("sc", android.content.Context.MODE_PRIVATE).edit()
         if (clave == "debug_no_launch") e.putBoolean(clave, valor == "1") else e.putString(clave, valor)
         e.apply()

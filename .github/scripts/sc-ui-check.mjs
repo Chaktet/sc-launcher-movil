@@ -63,29 +63,58 @@ const evalEn = (target, expr) => new Promise((res, rej) => {
   s.onopen = () => s.send(JSON.stringify({ id: 1, method: 'Runtime.evaluate', params: { expression: expr, returnByValue: true } }))
   s.onmessage = (e) => { const m = JSON.parse(e.data); if (m.id === 1) { s.close(); res(m.result?.result?.value) } }
 })
+// The emulator's software GPU freezes on Microsoft's real page, so a light local page plays Microsoft's part here
+// (it redirects to nativeclient with the state it got); sc-smoke.sh checks the real authorize URL from the runner.
+const buscaVentana = async (patron, segundos) => {
+  for (let s = 0; s < segundos; s += 2) {
+    await sleep(2000)
+    try {
+      const ts = await (await fetch('http://127.0.0.1:9222/json')).json()
+      const t = ts.find((x) => patron.test(x.url))
+      if (t) return t
+    } catch { /* not up yet */ }
+  }
+  return null
+}
+const adbVive = (que) => {
+  try { execFileSync('adb', ['shell', 'true'], { timeout: 30000 }); return true } catch (e) {
+    comprueba(false, `the emulator still answers after ${que} (adb: ${e.message.split('\n')[0]})`)
+    process.exit(1)
+  }
+}
+// a) cancel: the window opens and back closes it without saving anything
+await ev(`SC.debug('debug_ms_authorize_url', 'http://10.0.2.2:8000/fake-authorize.html?hold=1')`)
 await ev(`document.getElementById('btnMicrosoft').click()`)
-let ms = null
-let msInfo = null
-for (let i = 0; i < 20 && !msInfo?.campo; i++) {
-  await sleep(3000)
-  try {
-    const ts = await (await fetch('http://127.0.0.1:9222/json')).json()
-    ms = ts.find((t) => /login\.(microsoftonline|live)\.com/.test(t.url))
-    if (ms) msInfo = JSON.parse(await evalEn(ms, `JSON.stringify({ url: location.href, campo: !!document.querySelector('input[type=email], input[name=loginfmt]'), aadsts: /AADSTS\\d+/.exec(document.body.innerText || '')?.[0] || '' })`))
-  } catch { /* page still loading */ }
-}
-comprueba(!!msInfo?.campo && !msInfo.aadsts, `«Cuenta Microsoft» opens Microsoft's sign-in page with our app (${msInfo ? msInfo.url.split('?')[0] + (msInfo.aadsts ? ' error ' + msInfo.aadsts : '') : 'no window'})`)
-informe.push('INFO Microsoft window URL: ' + (ms ? ms.url.slice(0, 300) : '-'))
+let ventana = await buscaVentana(/fake-authorize\.html/, 30)
 shot('ui-1b-microsoft')
-try {
-  execFileSync('adb', ['shell', 'input', 'keyevent', 'KEYCODE_BACK'], { timeout: 30000 })
-} catch (e) {
-  // The emulator stopped answering: say so and stop here instead of hanging until the job timeout
-  comprueba(false, 'the emulator still answers after the Microsoft window (adb: ' + e.message.split('\n')[0] + ')')
-  process.exit(1)
-}
+adbVive('opening the Microsoft window')
+const params = ventana ? JSON.parse(await evalEn(ventana, 'JSON.stringify(window.scCi || {})')) : {}
+comprueba(!!ventana, '«Cuenta Microsoft» opens the sign-in window')
+comprueba(params.client === '1ce6e35a-126f-48fd-97fb-54d143ac6d45' && params.redirect === 'https://login.microsoftonline.com/common/oauth2/nativeclient' &&
+  params.method === 'S256' && (params.challenge || '').length >= 43 && (params.state || '').length >= 20,
+  `it asks with our client ID, the nativeclient redirect, PKCE S256 and a state (${JSON.stringify(params).slice(0, 200)})`)
+execFileSync('adb', ['shell', 'input', 'keyevent', 'KEYCODE_BACK'], { timeout: 30000 })
 await sleep(2500)
-comprueba(await visible('#vCuenta'), 'back from the Microsoft window cancels and returns to «¿Cómo quieres entrar?»')
+comprueba(await visible('#vCuenta') && !(await visible('#velo')), 'back closes the Microsoft window and returns to «¿Cómo quieres entrar?» with no error')
+// b) the redirect with this attempt's code is caught and the code is exchanged with Microsoft (a fake code, so
+//    Microsoft answers with an error: that answer proves the exchange reached Microsoft with our client)
+await ev(`SC.debug('debug_ms_authorize_url', 'http://10.0.2.2:8000/fake-authorize.html')`)
+execFileSync('adb', ['logcat', '-c'])
+await ev(`document.getElementById('btnMicrosoft').click()`)
+let errMs = ''
+for (let s = 0; s < 60 && !errMs; s += 2) {
+  await sleep(2000)
+  if (await visible('#velo') && (await ev(`document.getElementById('dlgTitulo').textContent`)) === 'No se pudo entrar con Microsoft') {
+    errMs = await ev(`document.getElementById('dlgTexto').textContent`)
+  }
+}
+const logMs = execFileSync('adb', ['logcat', '-d'], { maxBuffer: 256 * 1024 * 1024 }).toString().split('\n').filter((l) => /SC: Microsoft|AADSTS|invalid_grant/.test(l)).slice(0, 5).join(' | ')
+shot('ui-1c-microsoft-respuesta')
+comprueba(!!errMs && /AADSTS\d+|invalid_grant|invalid_request/.test(errMs + ' ' + logMs),
+  `the code from the redirect is exchanged with Microsoft (fake code refused by Microsoft: «${errMs.slice(0, 120)}» ${logMs.slice(0, 300)})`)
+comprueba(!/AADSTS50011|AADSTS700016|AADSTS7000218/.test(errMs + logMs), 'Microsoft accepts our client ID and redirect (no AADSTS50011 / 700016 / 7000218)')
+await ev(`document.getElementById('dlgSi').click()`)
+await ev(`SC.debug('debug_ms_authorize_url', '')`)
 
 await ev(`document.getElementById('btnNoPremium').click()`)
 await sleep(800)

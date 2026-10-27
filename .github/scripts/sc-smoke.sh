@@ -78,6 +78,16 @@ cp apk/debugci/*.apk packci/app-ci.apk
 printf '{"versionCode":999999,"versionName":"9.9.9-ci","notas":"Prueba de CI.","apks":{"x86_64":{"url":"http://10.0.2.2:8000/app-ci.apk","sha256":"%s","size":%s}}}\n' \
   "$(sha256sum packci/app-ci.apk | cut -d' ' -f1)" "$(stat -c %s packci/app-ci.apk)" > packci/sc-app.json
 adb shell appops set "$PKG" REQUEST_INSTALL_PACKAGES allow
+cp .github/scripts/fake-authorize.html packci/
+# Microsoft's real sign-in page for the app's exact request (client ID, nativeclient redirect, PKCE), checked from the
+# runner because the emulator cannot draw it: it must answer with the sign-in form, not an AADSTS error.
+MS_URL="https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?client_id=1ce6e35a-126f-48fd-97fb-54d143ac6d45&response_type=code&redirect_uri=https%3A%2F%2Flogin.microsoftonline.com%2Fcommon%2Foauth2%2Fnativeclient&scope=XboxLive.signin%20offline_access&prompt=select_account&state=ci$RANDOM$RANDOM&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256"
+MS_CODE=$(curl -sL -A "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36" -o evidence/microsoft-authorize.html -w '%{http_code} %{url_effective}' "$MS_URL")
+echo "Microsoft authorize: $MS_CODE" | tee -a evidence/apk.txt
+if grep -qo "AADSTS[0-9]*" evidence/microsoft-authorize.html || ! grep -qi "loginfmt\|login.live.com" evidence/microsoft-authorize.html; then
+  echo "::error::Microsoft's sign-in page refuses the app's request: $(grep -o 'AADSTS[0-9]*[^<]*' evidence/microsoft-authorize.html | head -1)"
+  FALLO=1
+fi
 (cd packci && python3 -m http.server 8000 >/dev/null 2>&1 &)
 sleep 2
 node .github/scripts/sc-ui-check.mjs "$PKG" || FALLO=1

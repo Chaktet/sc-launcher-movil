@@ -319,8 +319,18 @@ for (let m = 1; m <= minutos && !caida; m++) {
   caida = logcat().match(/OpenJDK exited with code : \d+|Incompatible mods found|Mod discovery failed|Mixin apply failed|crashed!/g)
 }
 if (COMPLETA) comprueba(!caida, `Móvil PRO keeps running on Android while it loads (no mod crashed)${caida ? ': ' + [...new Set(caida)].join(' · ') : ''}`)
-writeFileSync('evidence/juego-latest.log', leeLog() + '\n')
+const logJuego = leeLog()
+writeFileSync('evidence/juego-latest.log', logJuego + '\n')
 const lc = logcat()
+informe.push('INFO ' + `game heap: ${(lc.match(/-Xmx\d+[mMgG]/) || ['not found'])[0]}`)
+// The heap is enough for our pack: Minecraft reached the reload with SC-Pack and did not drop it (OutOfMemoryError → SC-91)
+if (COMPLETA) {
+  // the whole log (leeLog only keeps its tail)
+  const claves = adb('sh', '-c', `"grep -E 'Reloading ResourceManager|Caught error loading resourcepacks|OutOfMemoryError|SC-91' '${run}/logs/latest.log' || true"`)
+  const recarga = /Reloading ResourceManager: .*file\/SC-Pack/.test(claves)
+  const perdido = claves.match(/Caught error loading resourcepacks|OutOfMemoryError|SC-91: SC-Pack is not active[^\n]*/g)
+  comprueba(recarga && !perdido, `the server pack loads in game (no out-of-memory resource reload)${perdido ? ': ' + [...new Set(perdido)].join(' · ') : recarga ? '' : ': the reload with SC-Pack was not reached'}`)
+}
 writeFileSync('evidence/juego-ventana.txt', (lc.match(/.*(--width|--height|windowScale|Window size|setScaleFactor|\d{3,4}x\d{3,4}).*/g) || []).filter((l) => /tungsten|fcl|Bridge|JVM|width/i.test(l)).slice(0, 60).join('\n') + '\n')
 comprueba(!/Failed to load view group|Failed to generate default controller/.test(lc), 'the touch layout with the server keys loads without errors')
 informe.push('INFO ' + `game watched for ${Math.round((Date.now() - tJuego) / 60000)} min after it started (see juego-tiempos.txt)`)

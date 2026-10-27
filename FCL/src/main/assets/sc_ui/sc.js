@@ -89,7 +89,19 @@
   $('btnAvanzado').onclick = () => SC.avanzado()
 
   // ---- Play ----
-  $('btnJugar').onclick = () => SC.jugar()
+  // Not enough memory for the chosen modpack: warned once per app start before playing (ScMemoria)
+  let avisoMemoriaVisto = false
+  $('btnJugar').onclick = () => {
+    estado = leerEstado()
+    const aviso = ((estado.ram || {}).pack || {}).aviso
+    if (!aviso || avisoMemoriaVisto) return SC.jugar()
+    avisoMemoriaVisto = true
+    if (estado.perfil === 'pro' && estado.ram.auto) {
+      dialogo('Poca memoria', aviso, 'Jugar igual', 'Usar Móvil', () => { SC.ajuste('perfil', 'movil'); setTimeout(() => SC.jugar(), 150) }, () => SC.jugar())
+    } else {
+      dialogo('Poca memoria', aviso, 'Cancelar', 'Jugar igual', () => SC.jugar())
+    }
+  }
   $('btnReparar').onclick = () => dialogo('Reparar archivos', 'Se comprobarán todos los archivos del juego y se volverán a descargar los que estén mal. Tus ajustes y controles no se tocan.',
     'Cancelar', 'Reparar', () => SC.reparar())
   $('btnReintentar').onclick = () => { $('avisoError').hidden = true; SC.jugar() }
@@ -102,7 +114,9 @@
     s.value = String(r.max || 2048)
     $('ramAuto').checked = !!r.auto
     s.disabled = !!r.auto
-    $('ramValor').textContent = r.auto ? 'Automática' : (s.value + ' MB')
+    const pack = r.pack || {}
+    $('ramValor').textContent = r.auto ? 'Automática' + (pack.usada ? ' (' + pack.usada + ' MB)' : '') : (s.value + ' MB')
+    $('ramAviso').textContent = pack.aviso || ''; $('ramAviso').hidden = !pack.aviso
     const sel = $('selRender'); sel.innerHTML = ''
     for (const x of estado.renderers || []) { const o = document.createElement('option'); o.value = x.id; o.textContent = x.nombre; sel.appendChild(o) }
     sel.value = estado.renderer || ''
@@ -111,7 +125,7 @@
     $('chkAvisos').checked = estado.avisos !== false
   }
   $('ramSlider').oninput = () => { $('ramValor').textContent = $('ramSlider').value + ' MB' }
-  $('ramSlider').onchange = () => SC.ajuste('ram', $('ramSlider').value)
+  $('ramSlider').onchange = () => { SC.ajuste('ram', $('ramSlider').value); estado = leerEstado(); pintarAjustes() }
   $('ramAuto').onchange = () => { SC.ajuste('ramAuto', $('ramAuto').checked ? '1' : '0'); estado = leerEstado(); pintarAjustes() }
   $('selRender').onchange = () => SC.ajuste('renderer', $('selRender').value)
   $('selIdioma').onchange = () => SC.ajuste('idioma', $('selIdioma').value)
@@ -128,12 +142,12 @@
   }
 
   // ---- Dialog ----
-  function dialogo(titulo, texto, no, si, alSi) {
+  function dialogo(titulo, texto, no, si, alSi, alNo) {
     $('dlgTitulo').textContent = titulo; $('dlgTexto').textContent = texto
     $('dlgNo').textContent = no; $('dlgSi').textContent = si
     $('dlgNo').hidden = !no
     $('velo').hidden = false
-    $('dlgNo').onclick = () => { $('velo').hidden = true }
+    $('dlgNo').onclick = () => { $('velo').hidden = true; if (alNo) alNo() }
     $('dlgSi').onclick = () => { $('velo').hidden = true; if (alSi) alSi() }
   }
 
@@ -319,7 +333,10 @@
   pintarCuenta()
   cargarEstado(); cargarNovedades()
   // the game closed with an error last time: show what happened (once)
-  try { const c = SC.cierrePendiente ? SC.cierrePendiente() : ''; if (c) muestraCierre(JSON.parse(c)) } catch (e) {}
+  let cierreAlEntrar = ''
+  try { cierreAlEntrar = SC.cierrePendiente ? SC.cierrePendiente() : ''; if (cierreAlEntrar) muestraCierre(JSON.parse(cierreAlEntrar)) } catch (e) {}
+  // the last game ran out of memory and Minecraft dropped our pack: say so (once per game; a crash screen already says it)
+  try { const m = SC.packFallido ? SC.packFallido() : ''; if (m && !cierreAlEntrar) dialogo('Texturas sin cargar', JSON.parse(m).texto, '', 'Entendido', null) } catch (e) {}
   // a newer app on our website: checked at start, when coming back to the app and every 30 min (Wi-Fi: installs by itself)
   if (SC.buscarActualizacion) {
     SC.buscarActualizacion()

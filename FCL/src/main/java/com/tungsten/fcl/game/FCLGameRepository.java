@@ -426,6 +426,9 @@ public class FCLGameRepository extends DefaultGameRepository {
                 MemoryUtils.getFreeDeviceMemory(FCLApp.getAppContext()) * 1024L * 1024L,
                 vs.isAutoMemory()
         ) / 1024 / 1024);
+        // SC: our instance gets the heap its pack needs (ScMemoria), not 80 % of the free memory
+        int scHeap = com.tungsten.fcl.sc.ScMemoria.heapMb(FCLApp.getAppContext(), version, vs);
+        if (scHeap > 0) maxMemory = scHeap;
         LaunchOptions.Builder builder = new LaunchOptions.Builder()
                 .setGameDir(gameDir)
                 .setJava(javaVersion)

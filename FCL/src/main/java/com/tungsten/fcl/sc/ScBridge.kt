@@ -73,7 +73,8 @@ class ScBridge(private val activity: MainActivity, private val webView: WebView)
         o.put("ram", JSONObject()
             .put("auto", s.isAutoMemory)
             .put("max", s.maxMemory)
-            .put("total", MemoryUtils.getTotalDeviceMemory(activity)))
+            .put("total", MemoryUtils.getTotalDeviceMemory(activity))
+            .put("pack", ScMemoria.estado(activity, s)))
         val renderers = JSONArray()
         RendererManager.rendererList.forEach { renderers.put(JSONObject().put("id", it.id).put("nombre", it.name)) }
         o.put("renderers", renderers)
@@ -224,6 +225,10 @@ class ScBridge(private val activity: MainActivity, private val webView: WebView)
     /** At start: the game closed with an error last time? ({codigo, causa, texto, detalles} once, or "") */
     @JavascriptInterface
     fun cierrePendiente(): String = ScCierre.pendiente(activity)
+
+    /** At start: the last game dropped our pack for lack of memory? ({texto} once, or "") */
+    @JavascriptInterface
+    fun packFallido(): String = onMain { ScMemoria.packFallido(activity) }
 
     /** «Enviar informe» of the error screen: anonymous SC-45 with the cause key and the exit code. */
     @JavascriptInterface

@@ -56,35 +56,61 @@ public final class MinecraftInstanceTask<T> extends Task<ModpackConfiguration<T>
 
     @Override
     public void execute() throws Exception {
-        List<ModpackConfiguration.FileInformation> overrides = new ArrayList<>();
-
+        // SC: the SHA-1 of every override (about 10,000 entries in our phone pack) took ~29 s on one core (CI, 28-10).
+        // The entries are listed first and hashed by several threads, each with its own read-only view of the zip;
+        // the result (paths and hashes, in the same order) is exactly what the single-threaded loop produced.
+        List<String[]> entradas = new ArrayList<>(); // {subDirectory, relativePath}
         try (FileSystem fs = CompressingUtils.readonly(zipFile.toPath()).setEncoding(encoding).build()) {
-            // 先遍历统计条目总数（只走目录结构，不解压数据），哈希阶段按条目上报进度
-            long counted = 0;
-            for (String subDirectory : subDirectories) {
-                Path root = fs.getPath(subDirectory);
-                if (Files.exists(root))
-                    counted += countEntries(root);
-            }
-            final long total = counted;
-
-            long[] done = {0};
             for (String subDirectory : subDirectories) {
                 Path root = fs.getPath(subDirectory);
                 if (!Files.exists(root))
                     continue;
                 Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
                     @Override
-                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                        String relativePath = root.relativize(file).normalize().toString().replace(File.separatorChar, '/');
-                        updateMessage(relativePath);
-                        updateProgress(++done[0], total);
-                        overrides.add(new ModpackConfiguration.FileInformation(relativePath, DigestUtils.digestToString("SHA-1", file)));
+                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                        entradas.add(new String[]{subDirectory, root.relativize(file).normalize().toString().replace(File.separatorChar, '/')});
                         return FileVisitResult.CONTINUE;
                     }
                 });
             }
         }
+        final int total = entradas.size();
+        final String[] hashes = new String[total];
+        final java.util.concurrent.atomic.AtomicInteger hechos = new java.util.concurrent.atomic.AtomicInteger();
+        int hilos = Math.max(1, Math.min(4, Runtime.getRuntime().availableProcessors()));
+        java.util.concurrent.ExecutorService pool = java.util.concurrent.Executors.newFixedThreadPool(hilos);
+        try {
+            List<java.util.concurrent.Future<?>> trabajos = new ArrayList<>();
+            for (int h = 0; h < hilos; h++) {
+                final int desde = h;
+                final int paso = hilos;
+                trabajos.add(pool.submit(() -> {
+                    try (FileSystem fs = CompressingUtils.readonly(zipFile.toPath()).setEncoding(encoding).build()) {
+                        for (int i = desde; i < total; i += paso) {
+                            String[] e = entradas.get(i);
+                            hashes[i] = DigestUtils.digestToString("SHA-1", fs.getPath(e[0]).resolve(e[1]));
+                            int n = hechos.incrementAndGet();
+                            if (n % 50 == 0 || n == total) { updateMessage(e[1]); updateProgress(n, total); }
+                        }
+                    }
+                    return null;
+                }));
+            }
+            for (java.util.concurrent.Future<?> t : trabajos) {
+                try {
+                    t.get();
+                } catch (java.util.concurrent.ExecutionException ex) {
+                    Throwable c = ex.getCause();
+                    if (c instanceof IOException) throw (IOException) c;
+                    throw new IOException(c);
+                }
+            }
+        } finally {
+            pool.shutdownNow();
+        }
+        List<ModpackConfiguration.FileInformation> overrides = new ArrayList<>(total);
+        for (int i = 0; i < total; i++)
+            overrides.add(new ModpackConfiguration.FileInformation(entradas.get(i)[1], hashes[i]));
 
         ModpackConfiguration<T> configuration = new ModpackConfiguration<>(manifest, type, name, version, overrides);
         FileUtils.writeText(jsonFile, JsonUtils.GSON.toJson(configuration));

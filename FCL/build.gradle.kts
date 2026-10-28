@@ -78,8 +78,8 @@ android {
         targetSdk = libs.versions.targetSdk.get().toInt()
         // SC: our own version line (FCL base: 1.3.4.2). Bump both on every published APK; the app updater compares versionCode.
         // -PscVersionCode / -PscVersionName only for CI's test update APK (a "newer" copy of the debug build)
-        versionCode = (project.findProperty("scVersionCode") as String?)?.toInt() ?: 17
-        versionName = (project.findProperty("scVersionName") as String?) ?: "0.1.16"
+        versionCode = (project.findProperty("scVersionCode") as String?)?.toInt() ?: 18
+        versionName = (project.findProperty("scVersionName") as String?) ?: "0.1.17"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
@@ -182,6 +182,8 @@ val filterJreAssets = tasks.register<FilterJreAssets>("filterJreAssets") {
     if (arch != "all") {
         exclude { it.name.startsWith("bin-") && it.name != "bin-$arch.tar.xz" }
     }
+    // SC: Minecraft 1.21.1 (our only version) runs on Java 21; Java 8, 17 and 25 are ~70 MB of the APK that nobody uses
+    exclude("app_runtime/java/jre8/**", "app_runtime/java/jre17/**", "app_runtime/java/jre25/**")
 }
 
 androidComponents {

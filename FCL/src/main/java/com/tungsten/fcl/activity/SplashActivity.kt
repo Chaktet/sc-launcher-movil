@@ -289,6 +289,10 @@ class SplashActivity : FCLActivity() {
             java21 = RuntimeUtils.isLatest(FCLPath.JAVA_21_PATH, "/assets/app_runtime/java/jre21")
             java25 = RuntimeUtils.isLatest(FCLPath.JAVA_25_PATH, "/assets/app_runtime/java/jre25")
             jna = RuntimeUtils.isLatest(FCLPath.JNA_PATH, "/assets/app_runtime/jna")
+            // SC: only Java 21 ships (FCL/build.gradle.kts); the others count as done so nothing waits for them
+            java8 = true; java17 = true; java25 = true
+            // and the copies older versions unpacked (hundreds of MB on the phone) are removed
+            listOf(FCLPath.JAVA_8_PATH, FCLPath.JAVA_17_PATH, FCLPath.JAVA_25_PATH).forEach { runCatching { File(it).deleteRecursively() } }
             val resolvFile = File(FCLPath.JAVA_PATH, "resolv.conf")
             val servers = buildSet {
                 getSystemDnsServerAddresses()

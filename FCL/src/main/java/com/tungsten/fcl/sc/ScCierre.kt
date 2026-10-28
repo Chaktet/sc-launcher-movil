@@ -28,6 +28,7 @@ object ScCierre {
         val j = JSONObject().put("codigo", exitCode).put("causa", causa).put("texto", texto)
             .put("detalles", log.lines().filter { it.isNotBlank() }.takeLast(14).joinToString("\n"))
         activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY, j.toString()).commit()
+        ScAuto.cierreConError(activity, causa) // what the next JUGAR corrects by itself
         activity.startActivity(Intent(activity, ScReabrir::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
     }
 

@@ -199,6 +199,15 @@
             android:exported="false"
             android:process=":crash"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <!-- SC: event reminders and «region open again» notifications (ScRecordatorios) -->
+        <receiver
+            android:name=".sc.ScRecordatorio"
+            android:exported="false" />
+        <!-- SC: keeps the modpack download alive when the player switches app (ScServicioDescarga) -->
+        <service
+            android:name=".sc.ScServicioDescarga"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
         <!-- SC: result of the app updating itself (ScAppUpdate): confirmation, or reopening the new version -->
         <activity
             android:name=".sc.ScResultadoInstalacion"

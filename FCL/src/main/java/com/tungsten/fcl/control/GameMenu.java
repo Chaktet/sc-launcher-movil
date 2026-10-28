@@ -764,6 +764,8 @@ public class GameMenu implements MenuCallback, FCLBridgeCallback {
 
         viewManager.setup();
 
+        // SC: watches FPS and heat for the next game's automatic corrections (ScAuto)
+        com.tungsten.fcl.sc.ScAuto.vigilarRendimiento(activity);
         // 初始化时应用开关副作用（FPS/内存线程、持续性能模式），
         // 使重启后已开启的设置保持生效（开关行绑定不触发副作用回调）
         toggleFps(menuSetting.isShowFps());
@@ -970,6 +972,7 @@ public class GameMenu implements MenuCallback, FCLBridgeCallback {
             com.tungsten.fcl.sc.ScCierre.alSalir(activity, exitCode, fclBridge.getLogPath());
             Logging.LOG.log(Level.INFO, "JVM crashed, start jvm crash activity to show errors now!");
         }
+        else if (exitCode == 0) com.tungsten.fcl.sc.ScAuto.cierreNormal(activity);
         android.os.Process.killProcess(android.os.Process.myPid());
     }
 

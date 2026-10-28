@@ -88,8 +88,50 @@ object ScPack {
     private class Manifest(val version: String, val url: String, val sha256: String, val size: Long)
 
 
-    private fun ui(texto: String, pct: Int, detalle: String = "") =
+    private fun ui(texto: String, pct: Int, detalle: String = "") {
+        if (enFondo) return // the background check works without touching the page
         ScUi.js("scApp.progreso(${JSONObject.quote(texto)}, $pct, ${JSONObject.quote(detalle)})")
+    }
+
+    // ---- In the background (Felix 27-10): on Wi-Fi the next pack is downloaded before JUGAR, and once a day the
+    // installed files are checked (sha1 of the downloads, size+CRC of the bundled mods/packs) and the broken ones fixed.
+    @Volatile private var enFondo = false
+    @Volatile private var jugarPendiente: MainActivity? = null
+    @Volatile private var ultimoFondo = 0L
+    private const val KEY_REVISADO = "revision_silenciosa"
+
+    fun prepararEnFondo(activity: MainActivity) {
+        val ahora = System.currentTimeMillis()
+        if (ahora - ultimoFondo < 30 * 60_000 || !ScAppUpdate.sinCoste(activity)) return
+        if (!running.compareAndSet(false, true)) return
+        ultimoFondo = ahora
+        enFondo = true
+        Schedulers.io().execute {
+            try {
+                val perfil = profile(activity)
+                val repo = Profiles.getSelectedProfile().repository
+                if (!repo.isLoaded) repo.refreshVersions()
+                val m = runCatching { fetchManifest(MANIFESTS.getValue(perfil), null) }.getOrNull() ?: return@execute
+                val instalado = installedVersion(activity) == m.version && installedProfile(activity) == perfil && repo.hasVersion(INSTANCE)
+                if (!instalado) {
+                    download(m, silencioso = true) // JUGAR will find it ready
+                } else {
+                    val p = activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                    if (ahora - p.getLong(KEY_REVISADO, 0) > 20 * 3_600_000L) {
+                        val cache = File(FCLPath.CACHE_DIR, "sc-pack-${m.version}.mrpack").takeIf { it.isFile && it.length() == m.size }
+                        if (cache != null) verifyFiles(cache, repo.getRunDirectory(INSTANCE))
+                        p.edit().putLong(KEY_REVISADO, ahora).apply()
+                    }
+                }
+            } catch (e: Throwable) {
+                Logging.LOG.log(Level.INFO, "SC pack: background work stopped", e)
+            } finally {
+                enFondo = false
+                running.set(false)
+                jugarPendiente?.let { a -> jugarPendiente = null; playWhenReady(a) }
+            }
+        }
+    }
 
     fun installedVersion(context: Context): String? =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_VERSION, null)
@@ -109,8 +151,13 @@ object ScPack {
 
     /** JUGAR: makes sure the pack is current (installing/updating it if needed) and then launches the game. */
     fun playWhenReady(activity: MainActivity, forceRepair: Boolean = false) {
-        if (!running.compareAndSet(false, true)) return
+        if (!running.compareAndSet(false, true)) {
+            // the background check is running: JUGAR starts as soon as it ends (it never repeats its work)
+            if (enFondo && !forceRepair) { jugarPendiente = activity; ScUi.js("scApp.progreso('Terminando una revisión de archivos…', -1, '')") }
+            return
+        }
         cancelado = false
+        ScServicioDescarga.empezar(activity)
         Schedulers.io().execute {
             try {
                 prepare(activity, forceRepair)
@@ -136,6 +183,7 @@ object ScPack {
                 ScAvisos.enviar(activity, ScAvisos.INESPERADO, mapOf("n" to ScAvisos.clase(e)))
                 ScUi.js("scApp.error('No se pudo preparar el juego', ${JSONObject.quote(e.message ?: e.javaClass.simpleName)})")
             } finally {
+                ScServicioDescarga.terminar(activity)
                 running.set(false)
             }
         }
@@ -152,6 +200,7 @@ object ScPack {
             ?.let { viejas -> Thread({ viejas.forEach { it.deleteRecursively() } }, "SC backups").apply { isDaemon = true }.start() }
         ui("Comprobando el modpack…", -1)
 
+        ScAuto.perfilInicial(activity) // first install: the profile this phone can carry (only if never chosen)
         val perfil = profile(activity)
         val debugUrl = debugPrefs(activity)?.getString(DEBUG_MANIFEST_KEYS.getValue(perfil), null)?.takeIf { it.isNotBlank() }
         val manifest = runCatching { fetchManifest(MANIFESTS.getValue(perfil), debugUrl) }.getOrElse {
@@ -164,7 +213,7 @@ object ScPack {
         if (manifest == null) {
             if (forceRepair) throw ScError("Sin conexión", "Hace falta internet para comprobar y reparar los archivos.")
             // Offline: playing is still possible with what is installed (the server will say if it is too old).
-            if (hasInstance && installed != null) { selectAndConfigure(serverFor(activity)); return }
+            if (hasInstance && installed != null) { antesDeJugar(activity, repo, null); return }
             throw ScError("Sin conexión", "Hace falta internet para descargar el modpack la primera vez.")
         }
 
@@ -189,12 +238,59 @@ object ScPack {
             install(profile, mrpack, update = update)
             verifyFiles(mrpack, runDir)
             playerOptions?.let { mergeOptions(File(runDir, "options.txt"), it) }
+            guardarOpcionesDelPack(activity, mrpack)
+            if (!hasInstance) ScAuto.ajustesIniciales(activity, File(runDir, "options.txt"))
             activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY_VERSION, manifest.version).putString(KEY_INSTALLED_PROFILE, perfil).apply()
             File(FCLPath.CACHE_DIR).listFiles { f -> f.name.startsWith("sc-pack-") }?.forEach { if (it != mrpack) it.delete() }
         } else if (forceRepair) {
             verifyFiles(download(manifest), repo.getRunDirectory(INSTANCE))
         }
+        antesDeJugar(activity, repo, manifest)
+    }
+
+    /**
+     * Felix 27-10, automatic corrections before every game: the server's packs active again and in their order
+     * (Minecraft drops them all when a reload fails), a repair after a game closed by a broken mod, and what the last
+     * game asked for (shorter view after stutter or heat, safe mode). Then the instance is pointed at the server.
+     */
+    private fun antesDeJugar(activity: MainActivity, repo: com.tungsten.fcl.game.FCLGameRepository, manifest: Manifest?) {
+        val runDir = repo.getRunDirectory(INSTANCE)
+        val opciones = File(runDir, "options.txt")
+        if (ScAuto.consumirReparar(activity)) {
+            val cache = manifest?.let { runCatching { download(it) }.getOrNull() }
+                ?: File(FCLPath.CACHE_DIR, "sc-pack-${installedVersion(activity)}.mrpack").takeIf { it.isFile }
+            if (cache != null) {
+                ui("Revisando los archivos tras el último fallo…", -1)
+                verifyFiles(cache, runDir)
+                ScAuto.ponerNota(activity, "El juego se cerró por un archivo dañado: lo hemos revisado y reparado.")
+            }
+        }
+        reponerPacks(activity, opciones)
+        ScAuto.antesDeJugar(activity, opciones)
         selectAndConfigure(serverFor(activity))
+    }
+
+    private const val KEY_PACK_OPCIONES = "pack_opciones"
+
+    /** The pack's own resourcePacks lines, kept to put them back before every game. */
+    private fun guardarOpcionesDelPack(c: Context, mrpack: File) {
+        val lineas = runCatching {
+            ZipFile(mrpack).use { z ->
+                val e = OVERRIDE_DIRS.firstNotNullOfOrNull { z.getEntry(it + "options.txt") } ?: return
+                z.getInputStream(e).bufferedReader().readLines().filter { l -> PACK_OPTION_KEYS.any { l.startsWith("$it:") } }
+            }
+        }.getOrNull() ?: return
+        if (lineas.isNotEmpty()) c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY_PACK_OPCIONES, lineas.joinToString("\n")).apply()
+    }
+
+    private fun reponerPacks(c: Context, opciones: File) {
+        var guardadas = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_PACK_OPCIONES, null)
+        if (guardadas == null) {
+            // installs from before 0.1.14: read them from the cached pack once
+            File(FCLPath.CACHE_DIR, "sc-pack-${installedVersion(c)}.mrpack").takeIf { it.isFile }?.let { guardarOpcionesDelPack(c, it) }
+            guardadas = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_PACK_OPCIONES, null) ?: return
+        }
+        for (l in guardadas.split("\n")) if (l.contains(':')) ScAuto.opcion(opciones, l.substringBefore(':'), l.substringAfter(':'))
     }
 
     /** options.txt as ordered key → line ("key:value"), or null when there is none. */
@@ -224,57 +320,103 @@ object ScPack {
         return m
     }
 
-    /** Downloads the .mrpack into the cache (kept until the next version) and checks its sha256. */
-    private fun download(m: Manifest): File {
+    /**
+     * Downloads the .mrpack into the cache (kept until the next version) and checks its sha256. Built for bad mobile
+     * connections (Felix 27-10, «descargas a prueba de cortes»): a cut resumes where it stopped (HTTP Range on the .part
+     * file), it retries by itself with growing waits, and from the second try it also uses the direct route
+     * (directo.servidorcobblemon.es, the same files without Cloudflare, as the desktop launcher does). A background
+     * prefetch and JUGAR never download the same file at the same time (descargaLock).
+     */
+    private val descargaLock = java.util.concurrent.locks.ReentrantLock()
+
+    private fun download(m: Manifest, silencioso: Boolean = false): File {
         val dir = File(FCLPath.CACHE_DIR).apply { mkdirs() }
         val target = File(dir, "sc-pack-${m.version}.mrpack")
         if (target.length() == m.size && sha256(target) == m.sha256) return target
-        if (dir.usableSpace < m.size * 3) {
-            throw ScError("Falta espacio", "Libera unos ${m.size * 3 / 1_048_576} MB en el móvil y vuelve a pulsar JUGAR.")
+        if (!descargaLock.tryLock()) {
+            if (!silencioso) ui("Terminando la descarga que empezó en segundo plano…", -1)
+            descargaLock.lock()
         }
-        val part = File(dir, target.name + ".part")
         try {
-            val c = URL(m.url).openConnection() as HttpURLConnection
-            c.connectTimeout = 15000
-            c.readTimeout = 30000
-            conexionActual = c
-            try {
-                if (c.responseCode != 200) throw ScError("No se pudo descargar", "El servidor de descargas respondió ${c.responseCode}.")
+            if (target.length() == m.size && sha256(target) == m.sha256) return target
+            if (dir.usableSpace < m.size * 3) {
+                throw ScError("Falta espacio", "Libera unos ${m.size * 3 / 1_048_576} MB en el móvil y vuelve a pulsar JUGAR.")
+            }
+            val part = File(dir, target.name + ".part")
+            if (part.length() > m.size) part.delete()
+            val urls = listOf(m.url) + listOfNotNull(
+                URL(m.url).takeIf { it.host == "descargas.servidorcobblemon.es" }?.let { m.url.replaceFirst("://descargas.", "://directo.") })
+            var ultimo: Exception? = null
+            for (intento in 0 until 5) {
+                siCancelado()
+                if (intento > 0) {
+                    val espera = longArrayOf(0, 3, 8, 15, 30)[intento]
+                    if (!silencioso) ui("Se cortó la conexión · reintentando en $espera s (intento ${intento + 1} de 5)", -1)
+                    for (s in 0 until espera) { siCancelado(); Thread.sleep(1000) }
+                }
+                val url = urls[if (intento == 0) 0 else intento % urls.size]
+                try {
+                    descargarTramo(m, url, part, silencioso)
+                    if (part.length() == m.size) break
+                } catch (e: ScError) {
+                    throw e
+                } catch (e: Exception) {
+                    ultimo = e
+                    Logging.LOG.log(Level.INFO, "SC pack: download try ${intento + 1} failed at ${part.length()} bytes", e)
+                }
+            }
+            if (part.length() != m.size) {
+                if (ultimo != null) MainActivity.getInstance()?.let { ScAvisos.enviar(it, ScAvisos.DESCARGA_PARADA, mapOf("n" to ScAvisos.clase(ultimo!!))) }
+                throw ScError("No se pudo descargar", "La conexión se cortó varias veces. Lo descargado se guarda: pulsa Reintentar y seguirá donde se quedó.")
+            }
+            if (!silencioso) ui("Comprobando la descarga…", -1)
+            if (sha256(part) != m.sha256) {
+                part.delete()
+                throw ScError("Descarga dañada", "El modpack no llegó completo. Vuelve a intentarlo.")
+            }
+            target.delete()
+            if (!part.renameTo(target)) throw ScError("No se pudo guardar", "No se pudo guardar el modpack en el móvil.")
+            return target
+        } finally {
+            descargaLock.unlock()
+        }
+    }
+
+    /** One try: continues the .part file from its length (Range) or starts again if the server ignores the range. */
+    private fun descargarTramo(m: Manifest, url: String, part: File, silencioso: Boolean) {
+        val desde = part.length()
+        val c = URL(url).openConnection() as HttpURLConnection
+        c.connectTimeout = 15000
+        c.readTimeout = 30000
+        if (desde > 0) c.setRequestProperty("Range", "bytes=$desde-")
+        conexionActual = c
+        try {
+            val code = c.responseCode
+            val anadir = desde > 0 && code == 206
+            if (code != 200 && code != 206) throw java.io.IOException("HTTP $code")
+            java.io.FileOutputStream(part, anadir).use { out ->
                 c.inputStream.use { input ->
-                    part.outputStream().use { out ->
-                        val buf = ByteArray(64 * 1024)
-                        var done = 0L
-                        var lastPct = -1
-                        while (true) {
-                            siCancelado()
-                            val n = input.read(buf)
-                            if (n < 0) break
-                            out.write(buf, 0, n)
-                            done += n
-                            val pct = (done * 100 / m.size).toInt()
-                            if (pct != lastPct) {
-                                lastPct = pct
-                                ui("Descargando el modpack ${m.version} · ${done / 1_048_576} / ${m.size / 1_048_576} MB", pct)
-                            }
+                    val buf = ByteArray(64 * 1024)
+                    var done = if (anadir) desde else 0L
+                    var lastPct = -1
+                    while (true) {
+                        siCancelado()
+                        val n = input.read(buf)
+                        if (n < 0) break
+                        if (done + n > m.size) throw java.io.IOException("more bytes than announced")
+                        out.write(buf, 0, n)
+                        done += n
+                        val pct = (done * 100 / m.size).toInt()
+                        if (pct != lastPct && !silencioso) {
+                            lastPct = pct
+                            ui("Descargando el modpack ${m.version} · ${done / 1_048_576} / ${m.size / 1_048_576} MB", pct)
                         }
                     }
                 }
-            } finally {
-                c.disconnect()
             }
-        } catch (e: ScError) {
-            throw e
-        } catch (e: Exception) {
-            throw ScError("No se pudo descargar", "Revisa tu conexión y vuelve a intentarlo.")
+        } finally {
+            c.disconnect()
         }
-        ui("Comprobando la descarga…", -1)
-        if (part.length() != m.size || sha256(part) != m.sha256) {
-            part.delete()
-            throw ScError("Descarga dañada", "El modpack no llegó completo. Vuelve a intentarlo.")
-        }
-        target.delete()
-        if (!part.renameTo(target)) throw ScError("No se pudo guardar", "No se pudo guardar el modpack en el móvil.")
-        return target
     }
 
     /** Installs or updates the instance with FCL's own modpack tasks and waits for them, reporting progress. */
@@ -457,6 +599,18 @@ object ScPack {
                 profile.selectedVersion = INSTANCE
                 profile.repository.specializeVersionSetting(INSTANCE)?.let { vs ->
                     if (vs.serverIp != server) vs.serverIp = server
+                    // the last game closed because of the graphics: try the next renderer (Felix 27-10, automatic)
+                    MainActivity.getInstance()?.let { a ->
+                        if (ScAuto.consumirRender(a)) {
+                            val lista = com.mio.manager.RendererManager.rendererList
+                            if (lista.size > 1) {
+                                val i = lista.indexOfFirst { it.id == vs.renderer }
+                                val otro = lista[(i + 1).mod(lista.size)]
+                                vs.renderer = otro.id
+                                ScAuto.ponerNota(a, "La última vez fallaron los gráficos: ahora probamos el modo «${otro.name}». Puedes cambiarlo en Ajustes.")
+                            }
+                        }
+                    }
                     // the game's own notices (sc-avisos-cliente) follow the app's switch, as -Dsc.avisos does on the PC
                     val avisos = "-Dsc.avisos=" + (if (MainActivity.getInstance()?.let { ScAvisos.activo(it) } != false) "1" else "0")
                     val args = (vs.javaArgs.split(Regex("\\s+")).filter { it.isNotBlank() && !it.startsWith("-Dsc.avisos=") } + avisos).joinToString(" ")

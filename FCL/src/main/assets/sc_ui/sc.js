@@ -123,6 +123,7 @@
     $('selIdioma').value = String(estado.idioma || 12)
     $('selPerfil').value = estado.perfil || 'movil'
     $('chkAvisos').checked = estado.avisos !== false
+    $('chkEventos').checked = estado.eventos !== false
   }
   $('ramSlider').oninput = () => { $('ramValor').textContent = $('ramSlider').value + ' MB' }
   $('ramSlider').onchange = () => { SC.ajuste('ram', $('ramSlider').value); estado = leerEstado(); pintarAjustes() }
@@ -130,6 +131,7 @@
   $('selRender').onchange = () => SC.ajuste('renderer', $('selRender').value)
   $('selIdioma').onchange = () => SC.ajuste('idioma', $('selIdioma').value)
   $('chkAvisos').onchange = () => SC.ajuste('avisos', $('chkAvisos').checked ? '1' : '0')
+  $('chkEventos').onchange = () => SC.ajuste('eventos', $('chkEventos').checked ? '1' : '0')
   // Switching modpack: installed on the next JUGAR (same instance, so settings, controls and worlds stay)
   $('selPerfil').onchange = () => {
     const pro = $('selPerfil').value === 'pro'
@@ -185,6 +187,10 @@
         fila.append(n, v); caja.appendChild(fila)
       }
       eventos = [...(j.eventos || []), ...(j.fijos || [])].filter((e) => e && e.inicio)
+      // phone reminders 15 min before each event, and «open again» after a restart (ScRecordatorios)
+      if (SC.programarEventos) SC.programarEventos(JSON.stringify(eventos.map((e) => ({ nombre: e.nombre, inicio: e.inicio, region: e.region || '' }))))
+      const cerradas = (j.regiones || []).filter((r) => !r.online).map((r) => r.nombre)
+      if (cerradas.length && SC.vigilarReinicio) SC.vigilarReinicio(cerradas.join(','))
       pintarEvento()
       const lista = $('listaEventos'); lista.innerHTML = ''
       const ahora = Date.now()
@@ -272,7 +278,10 @@
     $('cierreTexto').textContent = j.texto || ''
     $('cierreDetalles').textContent = (j.detalles || '') + (j.codigo != null ? '\nCódigo de salida: ' + j.codigo : '')
     $('cierreDetalles').hidden = true
-    $('btnCierreInforme').disabled = false; $('btnCierreInforme').textContent = 'Enviar informe'
+    $('btnCierreInforme').disabled = !!j.enviado; $('btnCierreInforme').textContent = j.enviado ? 'Informe enviado ✓' : 'Enviar informe'
+    $('cierreInformeNota').textContent = j.enviado ? 'Nos ha llegado el aviso de forma anónima.' : 'El informe se envía de forma anónima.'
+    // two closes in a row: offer the safe mode (basic graphics, minimum view distance)
+    $('btnCierreSeguro').hidden = !(j.seguidos >= 2)
   }
   function cierraCierre() { document.body.classList.remove('cerrado'); $('pCierre').hidden = true; pestana('jugar') }
   $('btnCierreJugar').onclick = () => { cierraCierre(); $('btnJugar').click() }
@@ -281,6 +290,7 @@
     $('btnCierreInforme').disabled = true; $('btnCierreInforme').textContent = 'Informe enviado'
   }
   $('btnCierreDetalles').onclick = () => { $('cierreDetalles').hidden = !$('cierreDetalles').hidden }
+  $('btnCierreSeguro').onclick = () => { if (SC.modoSeguro) SC.modoSeguro(); cierraCierre(); $('btnJugar').click() }
 
   // ---- Called from Java ----
   window.scApp = {
@@ -339,11 +349,15 @@
   try { cierreAlEntrar = SC.cierrePendiente ? SC.cierrePendiente() : ''; if (cierreAlEntrar) muestraCierre(JSON.parse(cierreAlEntrar)) } catch (e) {}
   // the last game ran out of memory and Minecraft dropped our pack: say so (once per game; a crash screen already says it)
   try { const m = SC.packFallido ? SC.packFallido() : ''; if (m && !cierreAlEntrar) dialogo('Texturas sin cargar', JSON.parse(m).texto, '', 'Entendido', null) } catch (e) {}
+  // what the app corrected by itself since the last game (automatic repair, renderer, view distance, safe mode)
+  function notaAuto() { try { const n = SC.notaAuto ? SC.notaAuto() : ''; if (n) dialogo('Lo hemos arreglado solo', n, '', 'Entendido', null) } catch (e) {} }
+  notaAuto(); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') notaAuto() })
   // a newer app on our website: checked at start, when coming back to the app and every 30 min (Wi-Fi: installs by itself)
   if (SC.buscarActualizacion) {
-    SC.buscarActualizacion()
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') SC.buscarActualizacion() })
-    setInterval(() => { if (document.visibilityState === 'visible') SC.buscarActualizacion() }, 30 * 60 * 1000)
+    const fondo = () => { SC.buscarActualizacion(); if (SC.prepararEnFondo) setTimeout(() => SC.prepararEnFondo(), 20000) }
+    fondo()
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') fondo() })
+    setInterval(() => { if (document.visibilityState === 'visible') fondo() }, 30 * 60 * 1000)
   }
   setInterval(pintarEvento, 30000)
   setInterval(cargarEstado, 120000)

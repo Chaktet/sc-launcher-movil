@@ -84,6 +84,7 @@ class ScBridge(private val activity: MainActivity, private val webView: WebView)
         o.put("perfil", ScPack.profile(activity))
         o.put("perfilInstalado", ScPack.installedProfile(activity))
         o.put("avisos", ScAvisos.activo(activity))
+        o.put("eventos", ScRecordatorios.activo(activity))
         o.toString()
     }
 
@@ -195,6 +196,7 @@ class ScBridge(private val activity: MainActivity, private val webView: WebView)
                 "renderer" -> if (RendererManager.rendererList.any { it.id == valor }) s.renderer = valor
                 "perfil" -> ScPack.setProfile(activity, valor)
                 "avisos" -> ScAvisos.setActivo(activity, valor == "1")
+                "eventos" -> ScRecordatorios.setActivo(activity, valor == "1")
                 "idioma" -> valor.toIntOrNull()?.let {
                     LocaleUtils.changeLanguage(activity, it)
                     // FCL's own screens pick the language up on the next start; ours are always in Spanish.
@@ -224,7 +226,35 @@ class ScBridge(private val activity: MainActivity, private val webView: WebView)
 
     /** At start: the game closed with an error last time? ({codigo, causa, texto, detalles} once, or "") */
     @JavascriptInterface
-    fun cierrePendiente(): String = ScCierre.pendiente(activity)
+    fun cierrePendiente(): String {
+        val s = ScCierre.pendiente(activity)
+        if (s.isEmpty()) return s
+        // Felix 27-10: the notice goes by itself (anonymous: cause, exit code, phone model), no button needed
+        val j = runCatching { JSONObject(s) }.getOrNull() ?: return s
+        val modelo = android.os.Build.MODEL.replace(Regex("[^A-Za-z0-9._-]"), "_").take(40)
+        ScAvisos.enviar(activity, ScAvisos.CIERRE, mapOf("n" to j.optString("causa", "otro"), "x" to j.optInt("codigo").toString(), "m" to modelo))
+        return j.put("enviado", true).put("seguidos", ScAuto.cierresSeguidos(activity)).toString()
+    }
+
+    /** Event reminders 15 min before (the page passes the events it shows) and the notification permission once. */
+    @JavascriptInterface
+    fun programarEventos(eventos: String) { ScRecordatorios.programar(activity, eventos); ScRecordatorios.pedirPermiso(activity) }
+
+    /** Regions shown as restarting: tell the player when they are open again. regiones: names, comma separated. */
+    @JavascriptInterface
+    fun vigilarReinicio(regiones: String) { ScRecordatorios.vigilarReinicio(activity, regiones) }
+
+    /** On Wi-Fi: the next pack downloaded before JUGAR and a daily check of the files (ScPack.prepararEnFondo). */
+    @JavascriptInterface
+    fun prepararEnFondo() { ScPack.prepararEnFondo(activity) }
+
+    /** What the app corrected by itself since the last game («» when nothing), shown once on the home screen. */
+    @JavascriptInterface
+    fun notaAuto(): String = ScAuto.nota(activity)
+
+    /** «Entrar en modo seguro» of the error screen: the next game starts with minimum settings. */
+    @JavascriptInterface
+    fun modoSeguro() { ScAuto.pedirModoSeguro(activity) }
 
     /** At start: the last game dropped our pack for lack of memory? ({texto} once, or "") */
     @JavascriptInterface

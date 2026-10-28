@@ -1,7 +1,7 @@
 # Historial · SC Launcher Móvil
 
 ## Estado actual
-- Publicada la **0.1.11** (27-10, versionCode 12; historial abajo). Base:: pantallas PokéNav, modpack automático con dos perfiles (Ajustes ›
+- Publicada la **0.1.15** (28-10, versionCode 16; historial abajo). Base:: pantallas PokéNav, modpack automático con dos perfiles (Ajustes ›
   «Modpack Móvil / PRO»; `movil/sc-pack.json` y `movil/sc-pack-pro.json`, este último lo rehace solo
   `movil_pro.js` en descargas-auto), login Microsoft (código + PKCE), auto-actualización (`movil/app/sc-app.json`),
   botones táctiles del servidor (Pokémon/M, Lanzar/R, Poké ▲▼), reinstalación de instalaciones cortadas, velocidad de
@@ -13,6 +13,21 @@
 - Microsoft: app propia `b02d1916-762f-4732-ad9e-f10fc0a71fe9` pendiente de Mojang; al aprobarse, cambiar `OAUTH_API_KEY`.
 - Pendiente: quitar Terracotta/VPN y permisos sobrantes, textos legales de FCL, CurseForge, licencias/NOTICE; Java 8/17/25
   van en el APK sin usarse (solo hace falta el 21: ~60 MB menos y primer arranque más rápido).
+
+## 2026-10-28 · 0.1.12 a 0.1.15 y publicación automática
+- 0.1.12: memoria del juego según el perfil (ScMemoria, sesión «movil-memoria»: OOM al recargar recursos quitaba el pack) +
+  reabrir la app tras auto-actualizarse (ScResultadoInstalacion, el estado del instalador va a una actividad).
+- 0.1.13: Cancelar/Reintentar durante la descarga del modpack.
+- 0.1.14: 12 correcciones automáticas aprobadas por Felix (ScAuto, ScRecordatorios, ScServicioDescarga, descargas
+  reanudables con ruta directa, prefetch y revisión diaria con wifi, aviso SC-45 automático).
+- 0.1.15: actualizaciones del modpack sin reescribir los ~10.000 archivos sin cambios + progreso real al descomprimir
+  (sesión «movil-paso-lento», rama fix/paso-lento).
+- **Publicar ahora = etiquetar**: subir versionCode/versionName en `FCL/build.gradle.kts`, commit a main, y
+  `git tag -a vX.Y.Z -m "<nota para jugadores>"` + push del tag. El job «publicar» de SC Build crea la GitHub Release
+  con los 3 APK y la línea `<!-- sc-app {...} -->`; en OVH-A `descargas-auto/app_movil.js` (cron cada 2 min,
+  `app.log`) la publica en `movil/app/` + `sc-app.json`. 0.1.14 y 0.1.15 salieron así (~15 min, verificadas por
+  Cloudflare). `scripts/publica-app.sh` queda solo como plan B (ya no crear la release a mano si existe).
+- Ojo: el hook local de compilar Java falla con esta app (no hay entorno Android en el PC): compila solo en GitHub.
 
 ## 2026-10-27 noche (3) · 0.1.11: menú del juego propio
 - Diseño de Codex aprobado por Felix (`E:/tmp/app-android/codex-menu/`). `ScMenuJuego` + `assets/sc_ui/menu-juego.html`:

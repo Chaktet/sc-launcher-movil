@@ -1,18 +1,25 @@
 # Historial · SC Launcher Móvil
 
 ## Estado actual
-- Publicada la **0.1.15** (28-10, versionCode 16; historial abajo). Base:: pantallas PokéNav, modpack automático con dos perfiles (Ajustes ›
+- Publicada la **0.1.17** (28-10, versionCode 18; historial abajo). Base: pantallas PokéNav, modpack automático con dos perfiles (Ajustes ›
   «Modpack Móvil / PRO»; `movil/sc-pack.json` y `movil/sc-pack-pro.json`, este último lo rehace solo
   `movil_pro.js` en descargas-auto), login Microsoft (código + PKCE), auto-actualización (`movil/app/sc-app.json`),
   botones táctiles del servidor (Pokémon/M, Lanzar/R, Poké ▲▼), reinstalación de instalaciones cortadas, velocidad de
-  descarga, avisos anónimos SC-40..44.
+  descarga, avisos anónimos SC-40..45.
 - Sacar versión: subir versionCode/versionName en `FCL/build.gradle.kts`, push a main (prueba rápida ~27 min), si pasa
   etiqueta `vX.Y.Z` en ese commit, APK de los artefactos de ese run a `movil/app/` con nombre nuevo, `sc-app.json` al
   final, comprobar por Cloudflare. Los cambios del modpack NO necesitan versión de la app.
 - NO comprobado aún: login Microsoft real, Móvil PRO en un móvil real, los menús «rotos» del S25 (esperando capturas).
 - Microsoft: app propia `b02d1916-762f-4732-ad9e-f10fc0a71fe9` pendiente de Mojang; al aprobarse, cambiar `OAUTH_API_KEY`.
-- Pendiente: quitar Terracotta/VPN y permisos sobrantes, textos legales de FCL, CurseForge, licencias/NOTICE; Java 8/17/25
-  van en el APK sin usarse (solo hace falta el 21: ~60 MB menos y primer arranque más rápido).
+- Pendiente: quitar Terracotta/VPN y permisos sobrantes, textos legales de FCL, CurseForge, licencias/NOTICE; probar en
+  Móvil PRO la carga bajo demanda de ModernFix (`mixin.perf.dynamic_resources`), sin activar aún.
+
+## 2026-10-28 · 0.1.16-0.1.17 y modpacks más ligeros
+- 0.1.16: si una actualización del modpack falla, reinstala desde cero; SC-40 lleva la causa y el archivo.
+- 0.1.17 (optimizaciones aprobadas): APK sin Java 8/17/25 (solo el 21; se borran los ya instalados), huellas del modpack en
+  4 hilos (MinecraftInstanceTask), controles por defecto desde el primer arranque.
+- Modpacks (descargas-auto, RESOURCE-MC/historial 28-10 02:58): el pack va aparte en el índice → Móvil 143→80 MB, PRO
+  245→116 MB, y una actualización sin cambio de pack no lo vuelve a bajar. Pantallas = juego actual de `/menus/`.
 
 ## 2026-10-28 · 0.1.12 a 0.1.15 y publicación automática
 - 0.1.12: memoria del juego según el perfil (ScMemoria, sesión «movil-memoria»: OOM al recargar recursos quitaba el pack) +

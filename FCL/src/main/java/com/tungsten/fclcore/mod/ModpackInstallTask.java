@@ -37,6 +37,8 @@ public class ModpackInstallTask<T> extends Task<Void> {
     private final List<String> subDirectories;
     private final List<ModpackConfiguration.FileInformation> overrides;
     private final Predicate<String> callback;
+    // files handled so far / files in the overrides, read by the launcher UI while this long local step runs
+    private volatile long filesDone = 0, filesTotal = 0;
 
     /**
      * Constructor
@@ -60,6 +62,14 @@ public class ModpackInstallTask<T> extends Task<Void> {
             overrides = oldConfiguration.getOverrides();
     }
 
+    public long getFilesDone() {
+        return filesDone;
+    }
+
+    public long getFilesTotal() {
+        return filesTotal;
+    }
+
     @Override
     public void execute() throws Exception {
         Set<String> entries = new HashSet<>();
@@ -73,14 +83,19 @@ public class ModpackInstallTask<T> extends Task<Void> {
 
         int subDirectoryCount = subDirectories.size();
         int index = 0;
+        long[] finishedFiles = {0};
         for (String subDirectory : subDirectories) {
             final int finishedDirectories = index++;
+            final long[] subTotal = {0};
             new Unzipper(modpackFile, dest)
                     .setSubDirectory(subDirectory)
                     .setTerminateIfSubDirectoryNotExists()
                     .setReplaceExistentFile(true)
                     .setEncoding(charset)
                     .setProgressCallback((done, total, entryPath) -> {
+                        subTotal[0] = total;
+                        filesTotal = finishedFiles[0] + total;
+                        filesDone = finishedFiles[0] + done;
                         updateMessage(entryPath);
                         updateProgress((finishedDirectories + 1.0 * done / total) / subDirectoryCount);
                     })
@@ -91,9 +106,15 @@ public class ModpackInstallTask<T> extends Task<Void> {
 
                         if (!files.containsKey(entryPath)) {
                             // If old modpack does not have this entry, add this entry or override the file that user added.
-                            return true;
+                            // A file already holding the same bytes is left alone: rewriting it changes nothing and is
+                            // slow on Android shared storage (~10,000 override files in the SC pack, 27-10).
+                            return !sameContent(zipEntry, destPath);
                         } else if (!Files.exists(destPath)) {
                             // If both old and new modpacks have this entry, but the file is deleted by user, leave it missing.
+                            return false;
+                        } else if (Objects.equals(files.get(entryPath).getHash(), DigestUtils.digestToString("SHA-1", zipEntry))) {
+                            // Unchanged between the old and the new modpack: the file on disk is either that same
+                            // content or the user's own edit, and both stay as they are, so it is neither read nor rewritten.
                             return false;
                         } else {
                             // If both old and new modpacks have this entry, and user has modified this file,
@@ -103,6 +124,7 @@ public class ModpackInstallTask<T> extends Task<Void> {
                             return Objects.equals(oldHash, fileHash);
                         }
                     }).unzip();
+            finishedFiles[0] += subTotal[0];
         }
 
         // If old modpack have this entry, and new modpack deleted it. Delete this file.
@@ -111,5 +133,11 @@ public class ModpackInstallTask<T> extends Task<Void> {
             if (original.exists() && !entries.contains(file.getPath()))
                 original.delete();
         }
+    }
+
+    private static boolean sameContent(java.nio.file.Path zipEntry, java.nio.file.Path destPath) throws IOException {
+        if (!Files.isRegularFile(destPath) || Files.size(destPath) != Files.size(zipEntry))
+            return false;
+        return DigestUtils.digestToString("SHA-1", destPath).equals(DigestUtils.digestToString("SHA-1", zipEntry));
     }
 }

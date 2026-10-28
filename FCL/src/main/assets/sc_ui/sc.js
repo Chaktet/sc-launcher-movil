@@ -239,7 +239,8 @@
   function pintaCarga(o) {
     if ($('pCarga').hidden) modoCarga(true)
     const ahora = Date.now()
-    if (o.paso !== carga.paso) { carga.paso = o.paso; carga.desde = ahora; carga.pctDesde = o.pct || 0; carga.cambio = ahora }
+    // a new stage or a new title inside it (pack steps → unpacking) starts the time estimate again
+    if (o.paso !== carga.paso || o.titulo !== carga.titulo) { carga.paso = o.paso; carga.titulo = o.titulo; carga.desde = ahora; carga.pctDesde = o.pct || 0; carga.cambio = ahora }
     document.querySelectorAll('#listaPasos li').forEach((li, i) => { li.className = i < o.paso ? 'hecho' : (i === o.paso ? 'ahora' : '') })
     // stuck: nothing moved for a minute in a download step
     if (o.cuenta !== carga.cuenta || o.bps > 0) { carga.cuenta = o.cuenta; carga.cambio = ahora }
@@ -253,12 +254,13 @@
     $('cargaCuenta').textContent = o.cuenta || ''
     // time left: given by Java (pace of this stage on this phone) or measured here from the percentage
     let restante = o.restante
-    if (restante == null && !sinDato && o.pct > carga.pctDesde + 2 && ahora - carga.desde > 8000) {
+    // (not from a count of steps: they take from milliseconds to minutes, «quedan unos 10 s» stuck for minutes, 27-10)
+    if (restante == null && !sinDato && !o.sinRitmo && o.pct > carga.pctDesde + 2 && ahora - carga.desde > 8000) {
       restante = (100 - o.pct) * (ahora - carga.desde) / (o.pct - carga.pctDesde) / 1000
     }
     const mb = o.bps > 0 ? (o.bps / 1048576).toFixed(1).replace('.', ',') + ' MB/s' : ''
     $('cargaVel').textContent = parada ? '0 MB/s · sin estimación por ahora'
-      : [mb, restante > 0 ? tiempo(restante) : ''].filter(Boolean).join(' · ') || (sinDato ? 'Un momento…' : 'Calculando el tiempo restante')
+      : [mb, restante > 0 ? tiempo(restante) : ''].filter(Boolean).join(' · ') || (sinDato ? 'Un momento…' : o.sinRitmo ? '' : 'Calculando el tiempo restante')
     $('cargaParada').hidden = !parada
     $('cargaPaso').textContent = 'Paso ' + (o.paso + 1) + ' de 6'
     $('cargaRellenoTotal').style.width = Math.round(o.paso * 100 / 6) + '%'
@@ -309,8 +311,11 @@
       }
       const t = (texto || '').replace(/…$/, '')
       const comprobando = /^Comprobando el modpack/.test(t)
-      pintaCarga({ paso: comprobando ? 0 : 1, titulo: t, etapa: comprobando ? 'Modpack del servidor' : 'Mods y paquete de recursos',
-        pct: pct < 0 ? null : pct, cuenta: detalle || '', bps: 0, descarga: !comprobando, cancelable: !comprobando })
+      // unpacking runs on the phone itself: no download to stall, and its file count is what moves
+      const local = /^Descomprimiendo/.test(t)
+      pintaCarga({ paso: comprobando ? 0 : 1, titulo: t, etapa: comprobando ? 'Modpack del servidor' : local ? 'Archivos del juego' : 'Mods y paquete de recursos',
+        pct: pct < 0 ? null : pct, cuenta: detalle || '', bps: 0, descarga: !comprobando && !local, cancelable: !comprobando,
+        sinRitmo: /pasos|últimos archivos/.test(detalle || '') })
     },
     listo() { modoCarga(false); $('zonaJugar').hidden = false; $('zonaProgreso').hidden = true; pintarCuenta() },
     // FCL's launch steps (ScCarga): real stage, counts, speed and time left measured on this phone

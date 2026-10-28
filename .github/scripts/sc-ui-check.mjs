@@ -140,6 +140,12 @@ shot('ui-4-ajustes')
 // ---- Phase 3: JUGAR installs the real server modpack, then a newly published pack is applied by itself ----
 const adb = (...a) => execFileSync('adb', ['shell', ...a]).toString().trim()
 const packDe = async () => JSON.parse(await ev('SC.estado()')).pack
+// how long each slow step of the pack install took on this emulator (ScPack logs steps over 2 s), then cleared
+const pasosLentos = (cuando) => {
+  const l = execFileSync('adb', ['logcat', '-d'], { maxBuffer: 256 * 1024 * 1024 }).toString().split('\n').map((x) => (x.match(/SC pack: step (.*)/) || [])[1]).filter(Boolean)
+  informe.push('INFO ' + cuando + ': ' + (l.join(', ') || 'no step over 2 s logged'))
+  execFileSync('adb', ['logcat', '-c'])
+}
 const esperaPack = async (version, minutos, nombre) => {
   let visto = false
   for (let s = 0; s < minutos * 60; s += 5) {
@@ -160,6 +166,7 @@ const real = await (await fetch('https://descargas.servidorcobblemon.es/movil/sc
 await ev(`document.getElementById('btnJugar').click()`)
 const t0 = Date.now()
 comprueba(await esperaPack(real.version, 15, 'ui-5-instalando'), `JUGAR installs the server modpack ${real.version} (${Math.round((Date.now() - t0) / 1000)} s)`)
+pasosLentos('install steps')
 shot('ui-6-instalado')
 const run = adb('find', '/sdcard/SCLauncher', '-maxdepth', '4', '-type', 'd', '-name', "'SC Cobblemon'").split('\n')[0]
 comprueba(run.length > 0, `instance folder exists: ${run}`)
@@ -177,6 +184,7 @@ await ev(`SC.debug('debug_manifest_url', 'http://10.0.2.2:8000/sc-pack.json')`)
 await ev(`document.getElementById('btnJugar').click()`)
 const t1 = Date.now()
 comprueba(await esperaPack(ci.version, 15, 'ui-7-actualizando'), `a newly published pack (${ci.version}) is applied on JUGAR (${Math.round((Date.now() - t1) / 1000)} s)`)
+pasosLentos('update without modpack.cfg, steps')
 comprueba(adb('cat', `'${run}/config/sc-ci-marker.txt'`).includes(ci.version), 'the new pack files are in the instance')
 comprueba(adb('cat', `'${run}/options.txt'`).includes('sc_ci_option:1'), "the player's options.txt survived the update")
 const mods2 = adb('ls', `'${run}/mods'`).split('\n').filter((x) => x.endsWith('.jar'))
@@ -189,6 +197,7 @@ execFileSync('sh', ['-c', `sed -i 's/"version": *"[^"]*"/"version":"${ci2.versio
 await ev(`document.getElementById('btnJugar').click()`)
 const t2 = Date.now()
 comprueba(await esperaPack(ci2.version, 15, 'ui-7b-actualizando'), `a second update is applied (${Math.round((Date.now() - t2) / 1000)} s)`)
+pasosLentos('update with an unchanged pack, steps')
 comprueba(!adb('sh', '-c', `"ls '${run}/../../backup' 2>/dev/null"`).includes('SC Cobblemon-'), 'updates leave no copy of the instance in .minecraft/backup')
 await ev(`SC.debug('debug_manifest_url', '')`)
 

@@ -442,16 +442,50 @@ object ScPack {
         // The last steps are the big downloads (Cobblemon alone is 140 MB) and can take minutes on a slow connection:
         // the download speed shows they are moving (players reported «stuck at 99 %», 27-10)
         val speed = java.util.concurrent.atomic.AtomicInteger(0)
+        // Unpacking the overrides (~10,000 small files, SC-Pack-Movil.zip included) runs locally with no download speed
+        // and used to look frozen on one step («18 / 37 pasos», 27-10): while it runs, its own file count is shown.
+        val local = java.util.concurrent.atomic.AtomicReference<com.tungsten.fclcore.mod.ModpackInstallTask<*>?>(null)
+        val inicio = java.util.concurrent.ConcurrentHashMap<Task<*>, Long>()
+        var ultimoHecho = -1L
+        var desdeHecho = 0L
         fun paint() {
+            local.get()?.let { t ->
+                val hechos = t.filesDone
+                val de = t.filesTotal
+                val ahora = System.currentTimeMillis()
+                if (hechos != ultimoHecho) { ultimoHecho = hechos; desdeHecho = ahora }
+                // one big file (the 72 MB resource pack) takes a while by itself: say which one instead of a still count
+                val nombre = t.messageProperty().get()?.substringAfterLast('/')?.takeIf { ahora - desdeHecho > 3000 && it.isNotEmpty() }
+                val detalle = if (de > 0) "%,d de %,d archivos".format(hechos, de).replace(',', '.') +
+                    (nombre?.let { " · $it" } ?: "") else ""
+                ui("Descomprimiendo el modpack (archivos del juego)…", if (de > 0) (hechos * 100 / de).toInt() else -1, detalle)
+                return
+            }
             val total = executor.taskCount.coerceAtLeast(1)
             val mbs = if (speed.get() > 0) " · " + "%.1f".format(speed.get() / 1_048_576.0) + " MB/s" else ""
             val detail = if (total - finished in 1..50 && speed.get() > 0) "Descargando los últimos archivos$mbs" else "$finished / $total pasos$mbs"
             ui(texto, (finished * 100 / total).coerceAtMost(99), detail)
         }
         executor = task.executor(object : TaskListener() {
+            override fun onRunning(task: Task<*>) {
+                inicio[task] = System.currentTimeMillis()
+                if (task is com.tungsten.fclcore.mod.ModpackInstallTask<*>) { local.set(task); paint() }
+            }
+
             override fun onFinished(task: Task<*>) {
+                // which step takes the time on a real phone (players saw one step last for minutes, 27-10)
+                inicio.remove(task)?.let { t0 ->
+                    val ms = System.currentTimeMillis() - t0
+                    if (ms > 2000) Logging.LOG.log(Level.INFO, "SC pack: step ${task.javaClass.simpleName} took $ms ms")
+                }
+                if (local.get() === task) local.set(null)
                 finished++
                 paint()
+            }
+
+            override fun onFailed(task: Task<*>, throwable: Throwable) {
+                inicio.remove(task)
+                if (local.get() === task) local.set(null)
             }
 
             override fun onStop(success: Boolean, executor: TaskExecutor) {

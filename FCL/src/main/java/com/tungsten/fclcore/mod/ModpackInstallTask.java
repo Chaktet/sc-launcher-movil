@@ -135,9 +135,16 @@ public class ModpackInstallTask<T> extends Task<Void> {
         }
     }
 
-    private static boolean sameContent(java.nio.file.Path zipEntry, java.nio.file.Path destPath) throws IOException {
-        if (!Files.isRegularFile(destPath) || Files.size(destPath) != Files.size(zipEntry))
+    private static boolean sameContent(java.nio.file.Path zipEntry, java.nio.file.Path destPath) {
+        // Only a shortcut: when the check cannot be made the file is written, as before 0.1.15. An IOException here
+        // aborted the whole install (0.1.15: NoSuchFileException on a mods/ jar that vanished between isRegularFile
+        // and size on Android shared storage, emulator and players' SC-40, 28-10).
+        try {
+            if (!Files.isRegularFile(destPath) || Files.size(destPath) != Files.size(zipEntry))
+                return false;
+            return DigestUtils.digestToString("SHA-1", destPath).equals(DigestUtils.digestToString("SHA-1", zipEntry));
+        } catch (IOException e) {
             return false;
-        return DigestUtils.digestToString("SHA-1", destPath).equals(DigestUtils.digestToString("SHA-1", zipEntry));
+        }
     }
 }

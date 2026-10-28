@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- SC: «Minecraft is starting» screen (ScArranque). Codex design approved by Felix 28-10; sizes in CSS px of an 870x400
+     canvas scaled uniformly to the screen (ficha-arranque.md). Nothing here is clickable. -->
+<style>
+@font-face { font-family: 'Silkscreen'; src: url('fonts/Silkscreen-Regular.woff2') format('woff2'); font-weight: 400; }
+@font-face { font-family: 'Source Sans 3'; src: url('fonts/SourceSans3.woff2') format('woff2'); font-weight: 200 900; }
+:root {
+  --rojo: #B22839; --rojo-osc: #6E1B2C; --rojo-filo: #CE4050; --tinta: #16233E;
+  --crema: #F6F0DE; --papel: #FFFCF2; --celeste: #A8CEEE;
+  --esq: polygon(8px 0, calc(100% - 8px) 0, calc(100% - 8px) 4px, calc(100% - 4px) 4px, calc(100% - 4px) 8px, 100% 8px,
+    100% calc(100% - 8px), calc(100% - 4px) calc(100% - 8px), calc(100% - 4px) calc(100% - 4px), calc(100% - 8px) calc(100% - 4px),
+    calc(100% - 8px) 100%, 8px 100%, 8px calc(100% - 4px), 4px calc(100% - 4px), 4px calc(100% - 8px), 0 calc(100% - 8px),
+    0 8px, 4px 8px, 4px 4px, 8px 4px);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: var(--rojo-osc); pointer-events: none;
+  -webkit-user-select: none; user-select: none; }
+#lienzo { position: absolute; left: 0; top: 0; width: 870px; height: 400px; transform-origin: 0 0; visibility: hidden;
+  background: var(--rojo); box-shadow: inset 0 4px 0 var(--rojo-filo), inset 0 -6px 0 var(--rojo-osc);
+  font-family: 'Source Sans 3', sans-serif; color: var(--tinta); }
+.abs { position: absolute; }
+.esq { clip-path: var(--esq); }
+.filete { position: absolute; border: 2px solid var(--celeste); }
+#marco { left: 56px; top: 14px; width: 798px; height: 356px; background: var(--tinta); }
+#marcoCrema { left: 59px; top: 17px; width: 792px; height: 350px; background: var(--crema); }
+#marcoFilete { left: 63px; top: 21px; width: 784px; height: 342px; }
+#arte { left: 65px; top: 23px; width: 780px; height: 338px; object-fit: cover; object-position: 50% 63%; }
+#sello { left: 80px; top: 35px; width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated;
+  filter: drop-shadow(2px 3px 0 var(--tinta)); }
+#panel { left: 76px; top: 126px; width: 380px; height: 166px; background: var(--tinta); }
+#panelPapel { left: 79px; top: 129px; width: 374px; height: 160px; background: var(--papel); }
+#panelFilete { left: 82px; top: 132px; width: 368px; height: 154px; }
+#titulo { left: 94px; top: 146px; width: 344px; height: 30px; font: 400 23px/30px 'Silkscreen', monospace; white-space: nowrap; }
+#apoyo { left: 96px; top: 188px; width: 344px; height: 23px; font-weight: 500; font-size: 18px; line-height: 23px; white-space: nowrap; }
+#lento { left: 96px; top: 219px; width: 344px; height: 19px; font-weight: 600; font-size: 15px; line-height: 19px;
+  white-space: nowrap; visibility: hidden; }
+#lento.si { visibility: visible; }
+#lente { left: 96px; top: 246px; width: 30px; height: 30px; border: 3px solid var(--tinta); border-radius: 50%;
+  background: linear-gradient(to bottom, #B22839 0 44%, #16233E 44% 57%, #F6F0DE 57% 100%); }
+#lente::before { content: ''; position: absolute; inset: -7px; border: 2px solid var(--celeste); border-radius: 50%;
+  transform-origin: center; animation: pulso 1800ms ease-in-out infinite; }
+#lente::after { content: ''; position: absolute; left: 7px; top: 7px; width: 10px; height: 10px;
+  border: 2px solid var(--tinta); border-radius: 50%; background: var(--papel); }
+@keyframes pulso { 0%, 100% { transform: scale(.85); opacity: .45; } 50% { transform: scale(1.15); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { #lente::before { animation: none; transform: scale(1); opacity: .7; } }
+#reloj { left: 144px; top: 244px; width: 100px; height: 30px; font-weight: 700; font-size: 22px; line-height: 30px;
+  font-variant-numeric: tabular-nums; }
+#consejoMarco { left: 76px; top: 320px; width: 758px; height: 36px; background: var(--tinta); }
+#consejoCrema { left: 78px; top: 322px; width: 754px; height: 32px; background: var(--crema); }
+#consejo { left: 90px; top: 326px; width: 730px; height: 24px; font-weight: 600; font-size: 15px; line-height: 24px;
+  white-space: nowrap; transition: opacity 120ms ease-in-out; }
+#consejo.fuera { opacity: 0; }
+#pie { left: 56px; top: 374px; width: 798px; height: 20px; font-size: 15px; line-height: 20px; text-align: center; color: var(--crema); }
+</style>
+</head>
+<body>
+<div id="lienzo">
+  <div id="marco" class="abs esq"></div>
+  <div id="marcoCrema" class="abs esq"></div>
+  <div id="marcoFilete" class="filete"></div>
+  <img id="arte" class="abs" src="img/valle.webp" alt="">
+  <img id="sello" class="abs" src="img/sello.png" alt="">
+  <div id="panel" class="abs esq"></div>
+  <div id="panelPapel" class="abs esq"></div>
+  <div id="panelFilete" class="filete"></div>
+  <h1 id="titulo" class="abs">ABRIENDO MINECRAFT</h1>
+  <div id="apoyo" class="abs">Cargando los mods y el mundo del servidor…</div>
+  <div id="lento" class="abs">Va más lento de lo normal; no cierres la app</div>
+  <div id="lente" class="abs"></div>
+  <div id="reloj" class="abs">0 s</div>
+  <div id="consejoMarco" class="abs esq"></div>
+  <div id="consejoCrema" class="abs esq"></div>
+  <div id="consejo" class="abs"></div>
+  <div id="pie" class="abs">La primera vez tarda más; las siguientes, menos.</div>
+</div>
+<script>
+(function () {
+  // tips approved by Felix 28-10; every one names something that exists in the app
+  var CONSEJOS = [
+    'Consejo: pulsa la lente roja para abrir el menú del juego.',
+    'Consejo: en Ajustes eliges el modpack: Móvil Lite, Móvil o PRO.',
+    'Consejo: si el juego va lento, baja la Calidad de imagen en el menú del juego (Imagen).'
+  ];
+  var lienzo = document.getElementById('lienzo');
+  function encajar() {
+    var w = window.innerWidth, h = window.innerHeight, s = Math.min(w / 870, h / 400);
+    lienzo.style.transform = 'translate(' + (w - 870 * s) / 2 + 'px,' + (h - 400 * s) / 2 + 'px) scale(' + s + ')';
+  }
+  window.addEventListener('resize', encajar);
+  encajar();
+
+  // optional ?desde=<ms already elapsed>, to keep counting from the same instant if the page is ever recreated
+  var m = /[?&]desde=(\d+)/.exec(location.search);
+  var inicio = Date.now() - (m ? Math.max(0, parseInt(m[1], 10)) : 0);
+  var reloj = document.getElementById('reloj'), lento = document.getElementById('lento');
+  var consejo = document.getElementById('consejo'), indice = -1;
+  function tic() {
+    var seg = Math.floor((Date.now() - inicio) / 1000);
+    reloj.textContent = seg + ' s';
+    if (seg >= 60) lento.classList.add('si');
+    var toca = Math.floor(seg / 8) % CONSEJOS.length;
+    if (toca !== indice) {
+      if (indice < 0) { consejo.textContent = CONSEJOS[toca]; }
+      else {
+        consejo.classList.add('fuera');
+        setTimeout(function () { consejo.textContent = CONSEJOS[toca]; consejo.classList.remove('fuera'); }, 120);
+      }
+      indice = toca;
+    }
+  }
+  tic();
+  setInterval(tic, 250);
+  document.fonts.ready.then(function () { lienzo.style.visibility = 'visible'; });
+})();
+</script>
+</body>
+</html>

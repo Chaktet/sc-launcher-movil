@@ -745,8 +745,13 @@ public class GameMenu implements MenuCallback, FCLBridgeCallback {
         cursorView = findViewById(R.id.cursor);
 
         if (!isSimulated()) {
-            ImageUtil.loadInto(baseLayout, ThemeEngine.getInstance().getTheme().getBackground(activity));
-            launchProgress.setVisibility(View.VISIBLE);
+            // SC: our starting screen (ScArranque) instead of FCL's theme background and spinner
+            if (com.tungsten.fcl.sc.ScArranque.ACTIVO) {
+                com.tungsten.fcl.sc.ScArranque.mostrar(activity);
+            } else {
+                ImageUtil.loadInto(baseLayout, ThemeEngine.getInstance().getTheme().getBackground(activity));
+                launchProgress.setVisibility(View.VISIBLE);
+            }
             assert getBridge() != null;
             gameOption = new GameOption(getBridge().getGameDir());
             touchPad.post(() -> gameItemBar.setup(this, gameOption));
@@ -897,6 +902,7 @@ public class GameMenu implements MenuCallback, FCLBridgeCallback {
     public void onGraphicOutput() {
         baseLayout.setBackground(null);
         baseLayout.removeView(launchProgress);
+        com.tungsten.fcl.sc.ScArranque.quitar();
         if (!menuSetting.isShowLog() && menuSetting.isAutoShowLog()) {
             logWindow.setVisibility(false);
         }

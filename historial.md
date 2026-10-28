@@ -1,7 +1,7 @@
 # Historial · SC Launcher Móvil
 
 ## Estado actual
-- Publicada la **0.1.19** (28-10, versionCode 20). Base: pantallas PokéNav, modpack automático con dos perfiles (Ajustes ›
+- Publicada la **0.1.20** (28-10, versionCode 21). Base: pantallas PokéNav, modpack automático con dos perfiles (Ajustes ›
   «Modpack Móvil / PRO»; `movil/sc-pack.json` y `movil/sc-pack-pro.json`, este último lo rehace solo
   `movil_pro.js` en descargas-auto), login Microsoft (código + PKCE), auto-actualización (`movil/app/sc-app.json`),
   botones táctiles del servidor (Pokémon/M, Lanzar/R, Poké ▲▼), reinstalación de instalaciones cortadas, velocidad de
@@ -32,6 +32,13 @@
   se puede comprobar, se escribe como antes. Ambos van en la 0.1.16 (publicada); su emulador: instala 2.4.4 en 299 s,
   31 mods, dos actualizaciones OK (el job acaba por el tope de 45 min del emulador, como siempre).
 - Pendiente: en 1-2 días comprobar en `stats.json` que SC-41 baja con la 0.1.16+ y qué `k` traen los que queden.
+
+## 2026-10-28 · 0.1.20 actualización obligatoria y rendimiento automático
+- JUGAR comprueba antes si hay app nueva: con ella solo deja «Actualizar» (sin conexión juega igual). Felix se saltó la 0.1.19 y la app le dejó seguir.
+- Escalera de rendimiento 0..5 en `ScAuto` (gráficos rápidos → distancia 4 → resolución 75 % → distancia 2 y 60 % → Móvil Lite); baja con partida a <20 FPS o móvil caliente, sube tras 3 partidas a >45 FPS. Resolución = `windowScale` de `menu_setting.json`.
+- `gama()`: RAM, núcleos y GPU (EGL fuera de pantalla) → los móviles flojos empiezan en el escalón 2, los medios en 1 (una vez, también a los ya instalados).
+- Aviso SC-46 (x, f=FPS, n=escalón, m=modelo, g=GPU). El modpack Móvil 2.4.9 lleva BadOptimizations/MoreCulling/ScalableLux; Lite sin voz ni emotes.
+- La prueba del emulador falló una vez por la comprobación de Microsoft (sin respuesta) y pasó al relanzarla. Verificado por Cloudflare (3 APK, sha256 arm64). Sin probar en un móvil real.
 
 ## 2026-10-28 · 0.1.19 Móvil Lite y SC-91 falsos
 - Perfil «Móvil Lite» (`PROFILE_LITE`, `movil/sc-pack-lite.json`): el pack móvil sin skins de Pokémon (16 MB, 1.623 modelos frente a 6.303). Lo elige sola `ScAuto.perfilPorMemoria` si el móvil no da 2 GB al juego (<3,5 GB de RAM) o si la última partida perdió el pack por memoria; nunca si el jugador eligió perfil en Ajustes (`perfil_elegido`). Avisos con `p=movillite`.

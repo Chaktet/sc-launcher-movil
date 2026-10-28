@@ -1,7 +1,7 @@
 # Historial · SC Launcher Móvil
 
 ## Estado actual
-- Publicada la **0.1.17** (28-10, versionCode 18; historial abajo). Base: pantallas PokéNav, modpack automático con dos perfiles (Ajustes ›
+- Publicada la **0.1.19** (28-10, versionCode 20). Base: pantallas PokéNav, modpack automático con dos perfiles (Ajustes ›
   «Modpack Móvil / PRO»; `movil/sc-pack.json` y `movil/sc-pack-pro.json`, este último lo rehace solo
   `movil_pro.js` en descargas-auto), login Microsoft (código + PKCE), auto-actualización (`movil/app/sc-app.json`),
   botones táctiles del servidor (Pokémon/M, Lanzar/R, Poké ▲▼), reinstalación de instalaciones cortadas, velocidad de
@@ -32,6 +32,13 @@
   se puede comprobar, se escribe como antes. Ambos van en la 0.1.16 (publicada); su emulador: instala 2.4.4 en 299 s,
   31 mods, dos actualizaciones OK (el job acaba por el tope de 45 min del emulador, como siempre).
 - Pendiente: en 1-2 días comprobar en `stats.json` que SC-41 baja con la 0.1.16+ y qué `k` traen los que queden.
+
+## 2026-10-28 · 0.1.19 Móvil Lite y SC-91 falsos
+- Perfil «Móvil Lite» (`PROFILE_LITE`, `movil/sc-pack-lite.json`): el pack móvil sin skins de Pokémon (16 MB, 1.623 modelos frente a 6.303). Lo elige sola `ScAuto.perfilPorMemoria` si el móvil no da 2 GB al juego (<3,5 GB de RAM) o si la última partida perdió el pack por memoria; nunca si el jugador eligió perfil en Ajustes (`perfil_elegido`). Avisos con `p=movillite`.
+- Causa de «no se ven items/skins» en gama baja: sin memoria al cargar las skins, Minecraft quitaba el pack entero.
+- SC-91 «falta» de cada partida de móvil = falsa alarma de sc-avisos-cliente 1.5.0 (solo miraba SC-Pack.zip); 1.5.1 en Móvil/Lite 2.4.8.
+- Descarga del APK «atascada al 100 %» en pestañas de otras apps: nota en /como-jugar/movil (sesión de guías web).
+- Verificado por Cloudflare: sc-app.json 0.1.19, 3 APK con su tamaño, sha256 del arm64 igual. Sin probar en un móvil real.
 
 ## 2026-10-28 · 0.1.16-0.1.17 y modpacks más ligeros
 - 0.1.16: si una actualización del modpack falla, reinstala desde cero; SC-40 lleva la causa y el archivo.

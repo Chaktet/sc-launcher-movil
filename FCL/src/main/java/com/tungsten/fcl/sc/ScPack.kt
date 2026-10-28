@@ -496,26 +496,37 @@ object ScPack {
         })
         // registered once executor exists (the speed timer fires every second from its own thread); kept in a local
         // so the weak registration lives until the install ends
-        // a download that stays at 0 B/s for 3 minutes is reported once (SC-41), with the step it stopped at
+        // a download that stays at 0 B/s for 3 minutes is reported once (SC-41), with the step it stopped at (s) and the
+        // step running longest (k). The speed timer fires every second even when nothing downloads, so the clock only
+        // runs while a FetchTask is executing: local steps (unpacking, «103 / 103 pasos») sent false SC-41s (27-10)
         val movido = java.util.concurrent.atomic.AtomicLong(System.currentTimeMillis())
         val avisado = AtomicBoolean(false)
         val speedHandler = java.util.function.Consumer<FetchTask.SpeedEvent> { e ->
             runCatching {
                 speed.set(e.speed); paint()
                 val ahora = System.currentTimeMillis()
-                if (e.speed > 0) movido.set(ahora)
-                else if (ahora - movido.get() > 180_000 && avisado.compareAndSet(false, true))
-                    MainActivity.getInstance()?.let { ScAvisos.enviar(it, ScAvisos.DESCARGA_PARADA, mapOf("s" to "$finished-${executor.taskCount}")) }
+                if (e.speed > 0 || inicio.keys.none { it is FetchTask<*> }) movido.set(ahora)
+                else if (ahora - movido.get() > 180_000 && avisado.compareAndSet(false, true)) {
+                    val paso = inicio.entries.minByOrNull { it.value }?.key?.javaClass?.simpleName
+                        ?.takeIf { Regex("^[A-Za-z0-9._-]{1,60}$").matches(it) } ?: "otro"
+                    MainActivity.getInstance()?.let {
+                        ScAvisos.enviar(it, ScAvisos.DESCARGA_PARADA, mapOf("s" to "$finished-${executor.taskCount}", "k" to paso))
+                    }
+                }
             }
         }
         FetchTask.speedEvent.channel(FetchTask.SpeedEvent::class.java).registerWeak(speedHandler)
-        tareaActual = executor
-        siCancelado()
-        executor.start()
-        latch.await()
-        tareaActual = null
-        siCancelado()
-        FetchTask.speedEvent.channel(FetchTask.SpeedEvent::class.java).unregister(speedHandler)
+        try {
+            tareaActual = executor
+            siCancelado()
+            executor.start()
+            latch.await()
+            tareaActual = null
+            siCancelado()
+        } finally {
+            // also on Cancelar: a handler left registered keeps reading 0 B/s and sent a late SC-41
+            FetchTask.speedEvent.channel(FetchTask.SpeedEvent::class.java).unregister(speedHandler)
+        }
         if (!ok) {
             Logging.LOG.log(Level.WARNING, "SC pack: install/update failed", error)
             // the class of FCL's failure says what broke (download, disk, bad file); the ScError below adds SC-40

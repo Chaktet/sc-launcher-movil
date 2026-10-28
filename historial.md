@@ -14,6 +14,15 @@
 - Pendiente: quitar Terracotta/VPN y permisos sobrantes, textos legales de FCL, CurseForge, licencias/NOTICE; Java 8/17/25
   van en el APK sin usarse (solo hace falta el 21: ~60 MB menos y primer arranque más rápido).
 
+## 2026-10-27 noche (4) · SC-41 era falsa alarma (rama fix/sc41-aviso, sobre fix/paso-lento)
+- Alerta: 5 jugadores/hora con SC-41 (0.1.12, 0.1.13, 0.1.14). Pistas `s`: 103-103, 8025-8025, 47-47 (todo hecho), 0-1
+  (copia de la 0.1.4), 42-45… (descomprimir overrides).
+- Causa: el temporizador de velocidad de FetchTask emite cada segundo aunque no se descargue nada; cualquier paso local de
+  más de 3 min contaba como «descarga parada». Una descarga cortada de verdad acaba en SC-40 (timeout 10 s × 3 reintentos).
+- Arreglo: el reloj de 0 B/s solo corre con un FetchTask en marcha; pista nueva `k` = paso que más lleva; el handler se
+  quita en `finally` (con Cancelar quedaba registrado). Va a la 0.1.15 junto con fix/paso-lento.
+- Pendiente: tras publicar, comprobar que SC-41 baja en `stats.json`.
+
 ## 2026-10-27 noche (3) · 0.1.11: menú del juego propio
 - Diseño de Codex aprobado por Felix (`E:/tmp/app-android/codex-menu/`). `ScMenuJuego` + `assets/sc_ui/menu-juego.html`:
   el botón flotante (MenuView, lente roja `sc_menu_lente`) abre nuestro panel en vez de los cajones de FCL; cada opción

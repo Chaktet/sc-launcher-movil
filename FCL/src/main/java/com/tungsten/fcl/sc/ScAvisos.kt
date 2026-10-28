@@ -50,7 +50,7 @@ object ScAvisos {
         if (antes != null && ahora - antes < 60_000) return
         enviados[codigo] = ahora
         val version = runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "0"
-        val perfil = if (ScPack.profile(context) == ScPack.PROFILE_PRO) "movilpro" else "movil"
+        val perfil = when (ScPack.profile(context)) { ScPack.PROFILE_PRO -> "movilpro"; ScPack.PROFILE_LITE -> "movillite"; else -> "movil" }
         val q = linkedMapOf("c" to codigo, "v" to version, "p" to perfil, "r" to "normal", "a" to "android")
         for ((k, v) in extra) if (Regex("^[a-z]$").matches(k) && k !in q && SANO.matches(v)) q[k] = v
         val query = q.entries.joinToString("&") { (k, v) -> k + "=" + URLEncoder.encode(v, "UTF-8") }

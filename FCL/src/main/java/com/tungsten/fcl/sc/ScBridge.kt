@@ -194,7 +194,7 @@ class ScBridge(private val activity: MainActivity, private val webView: WebView)
                 "ram" -> valor.toIntOrNull()?.let { s.maxMemory = it.coerceIn(512, MemoryUtils.getTotalDeviceMemory(activity)) }
                 "ramAuto" -> s.isAutoMemory = valor == "1"
                 "renderer" -> if (RendererManager.rendererList.any { it.id == valor }) s.renderer = valor
-                "perfil" -> ScPack.setProfile(activity, valor)
+                "perfil" -> { ScPack.setProfile(activity, valor); ScAuto.perfilElegido(activity) }
                 "avisos" -> ScAvisos.setActivo(activity, valor == "1")
                 "eventos" -> ScRecordatorios.setActivo(activity, valor == "1")
                 "idioma" -> valor.toIntOrNull()?.let {

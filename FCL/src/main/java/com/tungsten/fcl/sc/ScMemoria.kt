@@ -25,10 +25,17 @@ object ScMemoria {
 
     private class Necesidad(val minimo: Int, val ideal: Int)
 
-    private fun necesidad(perfil: String) =
-        if (perfil == ScPack.PROFILE_PRO) Necesidad(3072, 4096) else Necesidad(2048, 3072)
+    // Móvil Lite loads about a quarter of the Pokémon models and animations of Móvil (no skins)
+    private fun necesidad(perfil: String) = when (perfil) {
+        ScPack.PROFILE_PRO -> Necesidad(3072, 4096)
+        ScPack.PROFILE_LITE -> Necesidad(1024, 2048)
+        else -> Necesidad(2048, 3072)
+    }
 
     private fun tope(total: Int) = minOf(total - 1536, total * 7 / 10).coerceAtLeast(512)
+
+    /** Whether this phone can give the game the minimum heap the Móvil pack needs (3.5 GB of RAM or more). */
+    fun cabeMovil(c: Context) = tope(MemoryUtils.getTotalDeviceMemory(c)) >= necesidad(ScPack.PROFILE_LIGHT).minimo
 
     /** Heap in MB for the automatic mode. */
     private fun automatica(c: Context, perfil: String): Int {
@@ -58,6 +65,9 @@ object ScMemoria {
                 perfil == ScPack.PROFILE_PRO ->
                     "Tu móvil tiene poca memoria para Móvil PRO: puede que el juego entre sin las texturas del servidor. " +
                         "Te recomendamos el modpack Móvil (ligero) en Ajustes."
+                perfil == ScPack.PROFILE_LIGHT ->
+                    "Tu móvil tiene poca memoria para el modpack Móvil: puede que el juego entre sin las texturas del " +
+                        "servidor. Te recomendamos Móvil Lite (sin skins de Pokémon) en Ajustes."
                 else ->
                     "Tu móvil tiene poca memoria para el modpack: puede que el juego entre sin las texturas del servidor. " +
                         "Cierra las demás apps antes de jugar."
@@ -95,6 +105,11 @@ object ScMemoria {
             ScPack.installedProfile(c) == ScPack.PROFILE_PRO ->
                 "La última vez el juego se quedó sin memoria y entraste sin las texturas del servidor. " +
                     "Cierra las demás apps antes de jugar o cambia al modpack Móvil (ligero) en Ajustes."
+            ScPack.installedProfile(c) == ScPack.PROFILE_LIGHT -> {
+                ScAuto.sinMemoria(c) // the next JUGAR installs Móvil Lite unless the player chose Móvil in Ajustes
+                "La última vez el juego se quedó sin memoria y entraste sin las texturas del servidor. " +
+                    "Al pulsar JUGAR se instalará el modpack Móvil Lite (sin skins de Pokémon), que necesita menos memoria."
+            }
             else ->
                 "La última vez el juego se quedó sin memoria y entraste sin las texturas del servidor. " +
                     "Cierra las demás apps antes de jugar."

@@ -28,6 +28,8 @@ object ScAuto {
     private const val K_LENTO = "auto_lento"
     private const val K_NOTA = "auto_nota"
     private const val K_INICIAL = "auto_inicial_hecho"
+    private const val K_ELEGIDO = "perfil_elegido"
+    private const val K_SIN_MEMORIA = "pack_sin_memoria"
 
     private fun p(c: Context) = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
@@ -57,6 +59,25 @@ object ScAuto {
     fun ponerNota(c: Context, texto: String) { p(c).edit().putString(K_NOTA, texto).apply() }
 
     // ---- first install: profile and view distance from the phone's memory ----
+
+    /** Ajustes: the player picked a profile, so it is never changed for him again. */
+    fun perfilElegido(c: Context) { p(c).edit().putBoolean(K_ELEGIDO, true).apply() }
+
+    /**
+     * Before each install check: a phone that cannot give the game the memory the Móvil pack needs (or whose last game
+     * dropped the pack out of memory) plays Móvil Lite, unless the player chose a profile in Ajustes.
+     */
+    fun perfilPorMemoria(c: Context) {
+        if (p(c).getBoolean(K_ELEGIDO, false) || ScPack.profile(c) != ScPack.PROFILE_LIGHT) return
+        if (ScMemoria.cabeMovil(c) && !p(c).getBoolean(K_SIN_MEMORIA, false)) return
+        ScPack.setProfile(c, ScPack.PROFILE_LITE)
+        p(c).edit().remove(K_SIN_MEMORIA).apply()
+        ponerNota(c, "Tu móvil tiene poca memoria: usamos el modpack Móvil Lite (sin skins de Pokémon) para que veas todas " +
+            "las texturas del servidor. Puedes cambiarlo en Ajustes.")
+    }
+
+    /** ScMemoria: the last game dropped the pack because it ran out of memory. */
+    fun sinMemoria(c: Context) { p(c).edit().putBoolean(K_SIN_MEMORIA, true).apply() }
 
     /** Before the first install, when the player never chose a profile: strong phones get PRO. */
     fun perfilInicial(c: Context) {

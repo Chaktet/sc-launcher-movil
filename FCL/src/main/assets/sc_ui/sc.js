@@ -54,7 +54,7 @@
     $('avatarCabeza').hidden = false
     $('verBadge').textContent = 'v' + (estado.versionApp || '')
     $('verApp').textContent = estado.versionApp || ''
-    const nombrePerfil = (p) => p === 'pro' ? 'Móvil PRO' : 'Móvil'
+    const nombrePerfil = (p) => p === 'pro' ? 'Móvil PRO' : p === 'lite' ? 'Móvil Lite' : 'Móvil'
     $('perfilDetalle').textContent = !estado.pack ? 'Se instala al pulsar JUGAR'
       : estado.perfil !== estado.perfilInstalado ? (nombrePerfil(estado.perfil) + ' · se instala al pulsar JUGAR')
       : ('Modpack ' + nombrePerfil(estado.perfilInstalado) + ' ' + estado.pack.split('-')[0])
@@ -98,6 +98,8 @@
     avisoMemoriaVisto = true
     if (estado.perfil === 'pro' && estado.ram.auto) {
       dialogo('Poca memoria', aviso, 'Jugar igual', 'Usar Móvil', () => { SC.ajuste('perfil', 'movil'); setTimeout(() => SC.jugar(), 150) }, () => SC.jugar())
+    } else if (estado.perfil === 'movil' && estado.ram.auto) {
+      dialogo('Poca memoria', aviso, 'Jugar igual', 'Usar Lite', () => { SC.ajuste('perfil', 'lite'); setTimeout(() => SC.jugar(), 150) }, () => SC.jugar())
     } else {
       dialogo('Poca memoria', aviso, 'Cancelar', 'Jugar igual', () => SC.jugar())
     }
@@ -134,12 +136,13 @@
   $('chkEventos').onchange = () => SC.ajuste('eventos', $('chkEventos').checked ? '1' : '0')
   // Switching modpack: installed on the next JUGAR (same instance, so settings, controls and worlds stay)
   $('selPerfil').onchange = () => {
-    const pro = $('selPerfil').value === 'pro'
-    SC.ajuste('perfil', $('selPerfil').value)
+    const v = $('selPerfil').value
+    SC.ajuste('perfil', v)
     setTimeout(pintarCuenta, 150)
-    dialogo(pro ? 'Móvil PRO' : 'Móvil',
-      (pro ? 'Más mods y animaciones, como el PRO del ordenador. Pide un móvil potente y tarda más en cargar. '
-           : 'El modpack ligero, el que mejor va en la mayoría de móviles. ') +
+    dialogo(v === 'pro' ? 'Móvil PRO' : v === 'lite' ? 'Móvil Lite' : 'Móvil',
+      (v === 'pro' ? 'Más mods y animaciones, como el PRO del ordenador. Pide un móvil potente y tarda más en cargar. '
+        : v === 'lite' ? 'Para móviles con poca memoria: las mismas texturas, objetos y menús del servidor, pero los Pokémon con skin se ven con su modelo normal. '
+        : 'El modpack ligero, el que mejor va en la mayoría de móviles. ') +
       'Se instalará al pulsar JUGAR; tus ajustes, controles y opciones se conservan.', '', 'Entendido', null)
   }
 

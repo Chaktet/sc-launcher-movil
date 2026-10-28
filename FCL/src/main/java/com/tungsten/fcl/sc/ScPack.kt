@@ -50,11 +50,16 @@ object ScPack {
      */
     const val PROFILE_LIGHT = "movil"
     const val PROFILE_PRO = "pro"
+    // Felix 28-10: «Móvil Lite», the Móvil pack without the Pokémon skins (same items, menus and forms), for phones
+    // that cannot hold the Móvil pack in memory; built on the website from the Móvil pack by monta_pack_lite.js
+    const val PROFILE_LITE = "lite"
     private val MANIFESTS = mapOf(
         PROFILE_LIGHT to "https://descargas.servidorcobblemon.es/movil/sc-pack.json",
-        PROFILE_PRO to "https://descargas.servidorcobblemon.es/movil/sc-pack-pro.json"
+        PROFILE_PRO to "https://descargas.servidorcobblemon.es/movil/sc-pack-pro.json",
+        PROFILE_LITE to "https://descargas.servidorcobblemon.es/movil/sc-pack-lite.json"
     )
-    private val DEBUG_MANIFEST_KEYS = mapOf(PROFILE_LIGHT to "debug_manifest_url", PROFILE_PRO to "debug_manifest_pro_url")
+    private val DEBUG_MANIFEST_KEYS = mapOf(PROFILE_LIGHT to "debug_manifest_url", PROFILE_PRO to "debug_manifest_pro_url",
+        PROFILE_LITE to "debug_manifest_lite_url")
     private val ALLOWED_PACK_HOSTS = setOf("descargas.servidorcobblemon.es")
     private val ALLOWED_FILE_HOSTS = setOf("cdn.modrinth.com", "descargas.servidorcobblemon.es")
     private val OVERRIDE_DIRS = listOf("overrides/", "client-overrides/")
@@ -201,6 +206,7 @@ object ScPack {
         ui("Comprobando el modpack…", -1)
 
         ScAuto.perfilInicial(activity) // first install: the profile this phone can carry (only if never chosen)
+        ScAuto.perfilPorMemoria(activity) // a phone that cannot hold the Móvil pack plays Móvil Lite (unless chosen)
         val perfil = profile(activity)
         val debugUrl = debugPrefs(activity)?.getString(DEBUG_MANIFEST_KEYS.getValue(perfil), null)?.takeIf { it.isNotBlank() }
         val manifest = runCatching { fetchManifest(MANIFESTS.getValue(perfil), debugUrl) }.getOrElse {

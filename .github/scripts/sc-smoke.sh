@@ -103,6 +103,8 @@ fi
 [ $FALLO -eq 0 ] && echo "SMOKE OK"
 # The result is kept in a file and judged by a later step: the emulator has hung on shutdown after the game ran,
 # and that must not decide (or stall) the job. Kill it ourselves.
+# The app's own log (FCL Logging: «SC pack: …» lines and full stack traces that never reach logcat)
+adb pull /sdcard/SCLauncher/log evidence/app-log >/dev/null 2>&1 || true
 echo "$FALLO" > evidence/resultado.txt
 adb emu kill >/dev/null 2>&1 || true
 sleep 10

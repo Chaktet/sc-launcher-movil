@@ -162,7 +162,20 @@ class ScBridge(private val activity: MainActivity, private val webView: WebView)
     @JavascriptInterface
     fun jugar() {
         if (onMain { Accounts.getSelectedAccount() } == null) return
-        ScPack.playWhenReady(activity)
+        // Felix 28-10: the update is compulsory. A newer app on our website = no game until it is installed; without a
+        // connection the check fails and the game starts as before (playing offline-installed stays possible).
+        io.execute {
+            val r = ScAppUpdate.check(activity)
+            if (r.isEmpty()) ScPack.playWhenReady(activity) else pedirActualizacion(r)
+        }
+    }
+
+    /** The only way out is «Actualizar»: the dialog has no cancel button, and JUGAR asks again. */
+    private fun pedirActualizacion(r: String) {
+        val j = JSONObject(r)
+        val texto = "Ya está la versión ${j.getString("version")} de SC Launcher y hace falta para jugar." +
+            j.optString("notas").takeIf { it.isNotBlank() }?.let { " $it" }.orEmpty()
+        ScUi.js("scApp.dialogo('Actualiza la app', ${JSONObject.quote(texto)}, '', 'Actualizar', 'actualizarApp')")
     }
 
     /** Checks every modpack file against its hash and downloads again the broken ones. */
@@ -280,12 +293,7 @@ class ScBridge(private val activity: MainActivity, private val webView: WebView)
             val r = ScAppUpdate.check(activity)
             if (r.isNotEmpty() && ScAppUpdate.sinCoste(activity)) {
                 if (ScAppUpdate.puedeAuto()) ScAppUpdate.downloadAndInstall(activity)
-            } else if (r.isNotEmpty()) {
-                val j = JSONObject(r)
-                val texto = "Ya está la versión ${j.getString("version")} de SC Launcher." +
-                    j.optString("notas").takeIf { it.isNotBlank() }?.let { " $it" }.orEmpty()
-                ScUi.js("scApp.dialogo('Nueva versión de la app', ${JSONObject.quote(texto)}, 'Más tarde', 'Actualizar', 'actualizarApp')")
-            }
+            } else if (r.isNotEmpty()) pedirActualizacion(r)
         }
     }
 

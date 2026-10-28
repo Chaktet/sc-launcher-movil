@@ -14,6 +14,14 @@
 - Pendiente: quitar Terracotta/VPN y permisos sobrantes, textos legales de FCL, CurseForge, licencias/NOTICE; probar en
   Móvil PRO la carga bajo demanda de ModernFix (`mixin.perf.dynamic_resources`), sin activar aún.
 
+## 2026-10-28 · Publicar solo con la prueba del emulador en verde (sesión «Error SC-41», Felix)
+- `publicar` ahora `needs: [build, emulator]`: una etiqueta solo publica si la prueba del emulador pasa (~20 min más).
+- La prueba rápida nunca acababa en verde: (1) `ls backup` sin carpeta (el caso bueno) hacía fallar a node justo tras
+  «a second update»; (2) al apagar, netsimd/crashpad_handler/el lanzador del emulador y nuestros http.server/logcat
+  dejaban el paso esperando hasta el tope de 45 min (lista en `evidence/procesos-al-cerrar.txt`): ahora se matan;
+  (3) la fase 5 esperaba el diálogo «Nueva versión de la app», que con wifi no sale desde la 0.1.6 (se instala sola).
+- Verificado: run 40628819795 (9f5beff9) todo OK, emulador 18 min. Sin probar aún una etiqueta real con el nuevo `needs`.
+
 ## 2026-10-28 · SC-41 falsa alarma y fallo de instalación de la 0.1.15 (sesión «Error SC-41»)
 - Alerta 5 jugadores/hora con SC-41. Pistas `s` (103-103, 8025-8025, 0-1, 42-45): pasos locales, no descargas. El
   temporizador de velocidad de FetchTask emite 0 B/s cada segundo aunque no se descargue nada; una descarga cortada de
@@ -23,7 +31,6 @@
   salir un NoSuchFileException (`mods/sc-avisos-cliente-1.5.0.jar` desaparece entre isRegularFile y size). ee4d6350: si no
   se puede comprobar, se escribe como antes. Ambos van en la 0.1.16 (publicada); su emulador: instala 2.4.4 en 299 s,
   31 mods, dos actualizaciones OK (el job acaba por el tope de 45 min del emulador, como siempre).
-- Ojo: el job «publicar» solo depende de `build`, no del emulador: una etiqueta publica sin prueba (así salió la 0.1.15).
 - Pendiente: en 1-2 días comprobar en `stats.json` que SC-41 baja con la 0.1.16+ y qué `k` traen los que queden.
 
 ## 2026-10-28 · 0.1.16-0.1.17 y modpacks más ligeros

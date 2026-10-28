@@ -198,7 +198,7 @@ await ev(`document.getElementById('btnJugar').click()`)
 const t2 = Date.now()
 comprueba(await esperaPack(ci2.version, 15, 'ui-7b-actualizando'), `a second update is applied (${Math.round((Date.now() - t2) / 1000)} s)`)
 pasosLentos('update with an unchanged pack, steps')
-comprueba(!adb('sh', '-c', `"ls '${run}/../../backup' 2>/dev/null"`).includes('SC Cobblemon-'), 'updates leave no copy of the instance in .minecraft/backup')
+comprueba(!adb('sh', '-c', `"ls '${run}/../../backup' 2>/dev/null || true"`).includes('SC Cobblemon-'), 'updates leave no copy of the instance in .minecraft/backup')
 await ev(`SC.debug('debug_manifest_url', '')`)
 
 // repair: a broken mod is detected by its hash and downloaded again

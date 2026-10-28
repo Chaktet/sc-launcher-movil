@@ -108,7 +108,14 @@ adb pull /sdcard/SCLauncher/log evidence/app-log >/dev/null 2>&1 || true
 echo "$FALLO" > evidence/resultado.txt
 adb emu kill >/dev/null 2>&1 || true
 sleep 10
+# Killing qemu alone was not enough: the step still waited until its 45-min cap (28-10: script done at 02:34, step
+# ended 03:06). The action keeps the emulator's output pipes, and its helpers (netsimd, crashpad_handler, the emulator
+# launcher) hold them. Note what is left, then kill everything run from the emulator folder and our own background jobs.
+ps -eo pid,ppid,etime,cmd | grep -E "emulator|qemu|netsim|crashpad|adb|http.server" | grep -v grep > evidence/procesos-al-cerrar.txt || true
+pkill -9 -f "${ANDROID_HOME:-/usr/local/lib/android/sdk}/emulator/" >/dev/null 2>&1 || true
 pkill -9 -f qemu-system >/dev/null 2>&1 || true
+pkill -9 -f "http.server 8000" >/dev/null 2>&1 || true
+pkill -9 -f "adb logcat" >/dev/null 2>&1 || true
 # Without this the action's own «adb emu kill» waits on the dead emulator until the step times out
 adb kill-server >/dev/null 2>&1 || true
 exit 0

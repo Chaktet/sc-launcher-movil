@@ -124,7 +124,8 @@ jobs:
   # key lives in GitHub.
   publicar:
     name: Publish the release (tags only)
-    needs: build
+    # Felix 28-10: only a version that passed the emulator test is published (0.1.15 went out with a broken install)
+    needs: [build, emulator]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:

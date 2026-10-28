@@ -232,21 +232,22 @@ shot('ui-7-vuelta')
 // ---- Phase 5: a newer app on our website is offered, downloaded, checked and handed to Android's installer ----
 await ev(`SC.debug('debug_app_manifest_url', 'http://10.0.2.2:8000/sc-app.json')`)
 await ev(`SC.buscarActualizacion()`)
-let oferta = false
-for (let s = 0; s < 30 && !oferta; s += 2) { await sleep(2000); oferta = await visible('#velo') && (await ev(`document.getElementById('dlgTitulo').textContent`)) === 'Nueva versión de la app' }
-comprueba(oferta, 'a newer app version on the website is offered («Nueva versión de la app»)')
-shot('ui-8b-app-nueva')
+// Since 0.1.6 the update downloads and installs by itself on Wi-Fi (the emulator's network is unmetered) and only
+// asks first («Nueva versión de la app» → «Actualizar») on mobile data: either way Android's installer must open.
+let dialogo = false
 let instalador = ''
-if (oferta) {
-  await ev(`document.getElementById('dlgSi').click()`)
-  for (let s = 0; s < 180 && !instalador; s += 3) {
-    await sleep(3000)
-    const top = execFileSync('adb', ['shell', 'dumpsys', 'activity', 'activities']).toString().split('\n').filter((l) => /ResumedActivity/.test(l)).join(' ')
-    instalador = /packageinstaller/i.test(top) ? top.trim().slice(0, 160) : ''
-    if (!instalador && await visible('#avisoError')) { informe.push('     error card: ' + await ev(`document.getElementById('errTitulo').textContent + ' · ' + document.getElementById('errTexto').textContent`)); break }
+for (let s = 0; s < 240 && !instalador; s += 3) {
+  await sleep(3000)
+  if (!dialogo && await visible('#velo') && (await ev(`document.getElementById('dlgTitulo').textContent`)) === 'Nueva versión de la app') {
+    dialogo = true
+    shot('ui-8b-app-nueva')
+    await ev(`document.getElementById('dlgSi').click()`)
   }
+  const top = execFileSync('adb', ['shell', 'dumpsys', 'activity', 'activities']).toString().split('\n').filter((l) => /ResumedActivity/.test(l)).join(' ')
+  instalador = /packageinstaller/i.test(top) ? top.trim().slice(0, 160) : ''
+  if (!instalador && await visible('#avisoError')) { informe.push('     error card: ' + await ev(`document.getElementById('errTitulo').textContent + ' · ' + document.getElementById('errTexto').textContent`)); break }
 }
-comprueba(!!instalador, `«Actualizar» downloads the APK, checks it and opens Android's installer (${instalador || 'not opened'})`)
+comprueba(!!instalador, `a newer app on the website is downloaded, checked and handed to Android's installer (${dialogo ? 'after «Actualizar»' : 'by itself on Wi-Fi'}: ${instalador || 'not opened'})`)
 shot('ui-8c-instalador')
 if (instalador) { execFileSync('adb', ['shell', 'input', 'keyevent', 'KEYCODE_BACK']); await sleep(2500) }
 await ev(`SC.debug('debug_app_manifest_url', '')`)

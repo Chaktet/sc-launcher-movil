@@ -235,7 +235,20 @@ object ScPack {
                 repo.getVersionJson(INSTANCE).delete()
                 repo.refreshVersions()
             }
-            install(profile, mrpack, update = update)
+            try {
+                install(profile, mrpack, update = update)
+            } catch (e: ScError) {
+                // An update that fails (NoSuchFileException seen on phones and in CI, 28-10) is not left broken: the pack
+                // is installed again from scratch over the folder, the way a first install does, which works.
+                if (!update || cancelado || e.titulo == "Cancelado") throw e
+                Logging.LOG.log(Level.WARNING, "SC pack: update failed, installing from scratch")
+                ui("Reinstalando el modpack desde cero…", -1)
+                File(runDir, "mods").deleteRecursively()
+                repo.getModpackConfiguration(INSTANCE).delete()
+                repo.getVersionJson(INSTANCE).delete()
+                repo.refreshVersions()
+                install(profile, mrpack, update = false)
+            }
             verifyFiles(mrpack, runDir)
             playerOptions?.let { mergeOptions(File(runDir, "options.txt"), it) }
             guardarOpcionesDelPack(activity, mrpack)
@@ -530,7 +543,14 @@ object ScPack {
         if (!ok) {
             Logging.LOG.log(Level.WARNING, "SC pack: install/update failed", error)
             // the class of FCL's failure says what broke (download, disk, bad file); the ScError below adds SC-40
-            error?.let { err -> MainActivity.getInstance()?.let { ScAvisos.enviar(it, ScAvisos.INSTALAR, mapOf("n" to ScAvisos.clase(err))) } }
+            error?.let { err ->
+                // the deepest cause and, for a missing file, its name (no path) say what broke
+                var raiz: Throwable = err
+                while (raiz.cause != null && raiz.cause !== raiz) raiz = raiz.cause!!
+                val archivo = (raiz.message ?: "").substringAfterLast('/').replace(Regex("[^A-Za-z0-9._-]"), "_").take(60)
+                MainActivity.getInstance()?.let { ScAvisos.enviar(it, ScAvisos.INSTALAR, mapOf("n" to ScAvisos.clase(raiz), "f" to archivo)) }
+                Logging.LOG.log(Level.WARNING, "SC pack: install failed at ${raiz.javaClass.simpleName}: ${raiz.message}", raiz)
+            }
             throw ScError(if (update) "No se pudo actualizar" else "No se pudo instalar",
                 "Ha fallado la instalación del modpack. Vuelve a intentarlo; si sigue fallando, usa «Reparar archivos».")
         }

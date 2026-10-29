@@ -1,7 +1,7 @@
 # Historial · SC Launcher Móvil
 
 ## Estado actual
-- Publicándose la **0.1.21** (29-10, versionCode 22; etiqueta v0.1.21). Antes 0.1.20. Base: pantallas PokéNav, modpack automático con dos perfiles (Ajustes ›
+- Publicada la **0.1.21** (29-10, versionCode 22). Base: pantallas PokéNav, modpack automático con dos perfiles (Ajustes ›
   «Modpack Móvil / PRO»; `movil/sc-pack.json` y `movil/sc-pack-pro.json`, este último lo rehace solo
   `movil_pro.js` en descargas-auto), login Microsoft (código + PKCE), auto-actualización (`movil/app/sc-app.json`),
   botones táctiles del servidor (Pokémon/M, Lanzar/R, Poké ▲▼), reinstalación de instalaciones cortadas, velocidad de
@@ -30,7 +30,8 @@
   y SC-40 dice el paso, archivo y HTTP. Nuevo SC-47 (preparar o abrir > 2 min, minutos + modelo + gama + RAM).
 - Codex: 2 hallazgos (claves SC-47 reservadas, zip borrado al pedir otro) arreglados → «Sin hallazgos». La prueba del
   emulador fallaba porque esperaba el título antiguo del aviso de actualización: arreglada; run 40807597812 todo OK.
-- Sin probar en un móvil real. Novedad para jugadores (--tipo movil): pendiente del OK de Felix.
+- Publicada por la etiqueta v0.1.21 (run 40810716001; su emulador se colgó sin log la 1ª vez y pasó al relanzarlo). sc-app.json
+  0.1.21 y los 3 APK verificados por Cloudflare (tamaño + sha256). Sin probar en un móvil real. Novedad --tipo movil: pendiente del OK de Felix.
 
 ## 2026-10-28 · Publicar solo con la prueba del emulador en verde (sesión «Error SC-41», Felix)
 - `publicar` ahora `needs: [build, emulator]`: una etiqueta solo publica si la prueba del emulador pasa (~20 min más).

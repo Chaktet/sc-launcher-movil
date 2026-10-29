@@ -67,8 +67,11 @@ object ScSoporte {
 
     private fun crear(activity: Activity): File {
         val dir = File(activity.cacheDir, "soporte").apply { mkdirs() }
-        dir.listFiles()?.forEach { it.delete() } // only the newest report is kept
-        val fecha = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.ROOT).format(Date())
+        // old reports go after an hour: a newer one must not delete a zip the receiving app is still reading (Codex 29-10).
+        // Requests run one at a time on [fondo], so two taps never write the same file
+        val haceUnaHora = System.currentTimeMillis() - 3_600_000
+        dir.listFiles()?.filter { it.lastModified() < haceUnaHora }?.forEach { it.delete() }
+        val fecha = SimpleDateFormat("yyyyMMdd-HHmmss-SSS", Locale.ROOT).format(Date())
         val zip = File(dir, "SC-informe-$fecha.zip")
         val runDir = runCatching { Profiles.getSelectedProfile().repository.getRunDirectory(ScPack.INSTANCE) }.getOrNull()
         val archivos = linkedMapOf<String, File>()

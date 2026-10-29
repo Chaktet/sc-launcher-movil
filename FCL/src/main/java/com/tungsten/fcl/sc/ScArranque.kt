@@ -76,8 +76,8 @@ object ScArranque {
         val modelo = android.os.Build.MODEL.replace(Regex("[^A-Za-z0-9._-]"), "_").take(40)
         // minutes (capped at 60) keep the values few enough for sc-stats' per-value counts
         ScAvisos.enviar(c, ScAvisos.ARRANQUE_LENTO, mapOf(
-            "t" to (arranque / 60).coerceAtMost(60).toString(), "c" to (prep / 60).coerceAtMost(60).toString(),
+            "t" to (arranque / 60).coerceAtMost(60).toString(), "u" to (prep / 60).coerceAtMost(60).toString(),
             "m" to modelo, "g" to runCatching { ScAuto.gama(c) }.getOrDefault("x"),
-            "r" to (com.tungsten.fclcore.util.platform.MemoryUtils.getTotalDeviceMemory(c) / 1024).toString()))
+            "y" to (com.tungsten.fclcore.util.platform.MemoryUtils.getTotalDeviceMemory(c) / 1024).toString()))
     }
 }

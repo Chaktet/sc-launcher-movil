@@ -37,6 +37,8 @@ import java.util.zip.ZipFile
  */
 object ScPack {
     const val INSTANCE = "SC Cobblemon"
+    /** Installs of the modpack tried in a row before the player sees the error (downloads cut on mobile data). */
+    private const val INTENTOS_INSTALAR = 3
     const val SERVER = "mc.servidorcobblemon.es"
     private const val PREFS = "sc"
     private const val KEY_VERSION = "pack_version"
@@ -241,19 +243,38 @@ object ScPack {
                 repo.getVersionJson(INSTANCE).delete()
                 repo.refreshVersions()
             }
-            try {
-                install(profile, mrpack, update = update)
-            } catch (e: ScError) {
-                // An update that fails (NoSuchFileException seen on phones and in CI, 28-10) is not left broken: the pack
-                // is installed again from scratch over the folder, the way a first install does, which works.
-                if (!update || cancelado || e.titulo == "Cancelado") throw e
-                Logging.LOG.log(Level.WARNING, "SC pack: update failed, installing from scratch")
-                ui("Reinstalando el modpack desde cero…", -1)
-                File(runDir, "mods").deleteRecursively()
-                repo.getModpackConfiguration(INSTANCE).delete()
-                repo.getVersionJson(INSTANCE).delete()
-                repo.refreshVersions()
-                install(profile, mrpack, update = false)
+            var actualizar = update
+            var intento = 1
+            while (true) {
+                try {
+                    install(profile, mrpack, update = actualizar)
+                    break
+                } catch (e: ScError) {
+                    if (cancelado || e.titulo == "Cancelado" || intento >= INTENTOS_INSTALAR) throw e
+                    intento++
+                    if (actualizar) {
+                        // An update that fails (NoSuchFileException seen on phones and in CI, 28-10) is not left broken:
+                        // the pack is installed again from scratch over the folder, the way a first install does
+                        Logging.LOG.log(Level.WARNING, "SC pack: update failed, installing from scratch")
+                        ui("Reinstalando el modpack desde cero…", -1)
+                        File(runDir, "mods").deleteRecursively()
+                    } else {
+                        // A download cut mid-install (SC-40 ModpackCompletionException, 0.1.20, 28-10: one player retried
+                        // six times by hand) is retried by itself after a pause; the mods already downloaded stay in
+                        // mods/ and are skipped, verifyFiles below checks them all afterwards
+                        Logging.LOG.log(Level.WARNING, "SC pack: install failed, automatic retry $intento of $INTENTOS_INSTALAR")
+                        val hasta = System.currentTimeMillis() + 5000L * intento
+                        while (System.currentTimeMillis() < hasta) {
+                            siCancelado()
+                            ui("La conexión se cortó: reintentando sola ($intento de $INTENTOS_INSTALAR)…", -1)
+                            Thread.sleep(500)
+                        }
+                    }
+                    repo.getModpackConfiguration(INSTANCE).delete()
+                    repo.getVersionJson(INSTANCE).delete()
+                    repo.refreshVersions()
+                    actualizar = false
+                }
             }
             verifyFiles(mrpack, runDir)
             playerOptions?.let { mergeOptions(File(runDir, "options.txt"), it) }
@@ -467,6 +488,7 @@ object ScPack {
         val inicio = java.util.concurrent.ConcurrentHashMap<Task<*>, Long>()
         var ultimoHecho = -1L
         var desdeHecho = 0L
+        val primerFallo = java.util.concurrent.atomic.AtomicReference<Pair<Task<*>, Throwable>?>(null)
         fun paint() {
             local.get()?.let { t ->
                 val hechos = t.filesDone
@@ -505,6 +527,8 @@ object ScPack {
             override fun onFailed(task: Task<*>, throwable: Throwable) {
                 inicio.remove(task)
                 if (local.get() === task) local.set(null)
+                // the first step that broke: FCL's final error is a bare ModpackCompletionException (0.1.20 SC-40s, 28-10)
+                primerFallo.compareAndSet(null, task to throwable)
             }
 
             override fun onStop(success: Boolean, executor: TaskExecutor) {
@@ -549,13 +573,20 @@ object ScPack {
         if (!ok) {
             Logging.LOG.log(Level.WARNING, "SC pack: install/update failed", error)
             // the class of FCL's failure says what broke (download, disk, bad file); the ScError below adds SC-40
-            error?.let { err ->
-                // the deepest cause and, for a missing file, its name (no path) say what broke
+            val fallo = primerFallo.get()
+            (fallo?.second ?: error)?.let { err ->
+                // the deepest cause of the first failed step and the file it was writing (name only, no path)
                 var raiz: Throwable = err
                 while (raiz.cause != null && raiz.cause !== raiz) raiz = raiz.cause!!
-                val archivo = (raiz.message ?: "").substringAfterLast('/').replace(Regex("[^A-Za-z0-9._-]"), "_").take(60)
-                MainActivity.getInstance()?.let { ScAvisos.enviar(it, ScAvisos.INSTALAR, mapOf("n" to ScAvisos.clase(raiz), "f" to archivo)) }
-                Logging.LOG.log(Level.WARNING, "SC pack: install failed at ${raiz.javaClass.simpleName}: ${raiz.message}", raiz)
+                val paso = fallo?.first
+                val destino = (paso as? com.tungsten.fclcore.task.FileDownloadTask)?.file?.name
+                val archivo = (destino ?: (raiz.message ?: "").substringAfterLast('/')).replace(Regex("[^A-Za-z0-9._-]"), "_").take(60)
+                val extra = mutableMapOf("n" to ScAvisos.clase(raiz), "f" to archivo)
+                paso?.javaClass?.simpleName?.takeIf { it.isNotEmpty() }?.let { extra["k"] = it }
+                // an HTTP status says «server/CDN refused», no status «the phone's connection»
+                (raiz as? com.tungsten.fclcore.util.io.ResponseCodeException)?.let { extra["h"] = it.responseCode.toString() }
+                MainActivity.getInstance()?.let { ScAvisos.enviar(it, ScAvisos.INSTALAR, extra) }
+                Logging.LOG.log(Level.WARNING, "SC pack: install failed at ${paso?.javaClass?.simpleName} ($archivo): ${raiz.javaClass.simpleName}: ${raiz.message}", raiz)
             }
             throw ScError(if (update) "No se pudo actualizar" else "No se pudo instalar",
                 "Ha fallado la instalación del modpack. Vuelve a intentarlo; si sigue fallando, usa «Reparar archivos».")

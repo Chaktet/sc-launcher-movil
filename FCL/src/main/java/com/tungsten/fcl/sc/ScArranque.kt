@@ -18,6 +18,12 @@ object ScArranque {
     const val ACTIVO = true
     private const val URL = "file:///android_asset/sc_ui/arranque.html"
     private var webView: WebView? = null
+    // slow start measured on the phone (Felix 28-10: «1500 segundos» on a Redmi 13C): FCL's preparation (ScCarga) and
+    // the time from the game activity to Minecraft's first frame, sent as SC-47 when either is long
+    private var inicio = 0L
+    private var contexto: android.content.Context? = null
+    @Volatile @JvmStatic var segundosPreparacion = 0L
+    private const val LENTO_S = 120
 
     @SuppressLint("SetJavaScriptEnabled")
     @JvmStatic
@@ -25,6 +31,8 @@ object ScArranque {
         // a game that died before its first frame leaves the old activity's page behind: start over
         if (webView?.context === activity) return
         webView = null
+        inicio = System.currentTimeMillis()
+        contexto = activity.applicationContext
         val wv = WebView(activity)
         wv.setBackgroundColor(Color.parseColor("#6E1B2C"))
         wv.settings.apply {
@@ -52,9 +60,24 @@ object ScArranque {
     fun quitar() {
         val wv = webView ?: return
         webView = null
+        avisarSiLento()
         wv.animate().alpha(0f).setDuration(250).withEndAction {
             (wv.parent as? ViewGroup)?.removeView(wv)
             wv.destroy()
         }.start()
+    }
+
+    private fun avisarSiLento() {
+        val c = contexto ?: return
+        val arranque = (System.currentTimeMillis() - inicio) / 1000
+        val prep = segundosPreparacion
+        segundosPreparacion = 0
+        if (inicio == 0L || (arranque < LENTO_S && prep < LENTO_S)) return
+        val modelo = android.os.Build.MODEL.replace(Regex("[^A-Za-z0-9._-]"), "_").take(40)
+        // minutes (capped at 60) keep the values few enough for sc-stats' per-value counts
+        ScAvisos.enviar(c, ScAvisos.ARRANQUE_LENTO, mapOf(
+            "t" to (arranque / 60).coerceAtMost(60).toString(), "c" to (prep / 60).coerceAtMost(60).toString(),
+            "m" to modelo, "g" to runCatching { ScAuto.gama(c) }.getOrDefault("x"),
+            "r" to (com.tungsten.fclcore.util.platform.MemoryUtils.getTotalDeviceMemory(c) / 1024).toString()))
     }
 }

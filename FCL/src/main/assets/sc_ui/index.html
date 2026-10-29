@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="sc.css">
 </head>
 <body>
+<script src="escala.js"></script>
 <div id="carcasa">
 
   <!-- Header: lens + lights, brand, account -->
@@ -127,6 +128,7 @@
               <small id="cierreInformeNota">El informe se envía de forma anónima.</small>
             </div>
             <button id="btnCierreSeguro" class="btn" type="button" hidden>Entrar en modo seguro</button>
+            <button id="btnCierreSoporte" class="btn" type="button">Informe para soporte</button>
             <button id="btnCierreDetalles" class="enlace" type="button">Ver detalles</button>
           </div>
           <pre id="cierreDetalles" hidden></pre>
@@ -175,6 +177,7 @@
         <div id="avisoError" class="sc2Frame" hidden>
           <span class="etiquetaError">Error</span>
           <div><strong id="errTitulo"></strong><span id="errTexto"></span></div>
+          <button id="btnErrSoporte" class="btn" type="button">Informe</button>
           <button id="btnReintentar" class="btn" type="button">Reintentar</button>
         </div>
       </div>
@@ -209,19 +212,23 @@
             <select id="selRender" class="campo"></select>
           </div>
           <div class="ajCol sc2Frame">
-            <span class="ajEtiqueta">Idioma</span>
+            <div class="ajFila"><span class="ajEtiqueta">Idioma</span>
             <select id="selIdioma" class="campo">
               <option value="12">Español</option>
               <option value="1">English</option>
-            </select>
-            <label class="ajCheck"><input id="chkAvisos" type="checkbox"> Enviar errores anónimos (nos ayuda a arreglarlos)</label>
+            </select></div>
+            <label class="ajCheck"><input id="chkAvisos" type="checkbox"> Enviar errores anónimos (para arreglarlos)</label>
             <label class="ajCheck"><input id="chkEventos" type="checkbox"> Avisos de eventos y reinicios en el móvil</label>
             <div class="regla"></div>
-            <span class="ajEtiqueta">Cuenta</span>
-            <span id="ajCuenta" class="ajCuenta"></span>
-            <button id="btnCerrarSesion" class="btn btnRojo" type="button">Cerrar sesión</button>
-            <div class="regla"></div>
-            <span class="ajAcerca">SC Launcher <span id="verApp"></span> · Basado en FoldCraftLauncher (FCL-Team), HMCL y Amethyst/PojavLauncher · Licencia GPL-3.0 · github.com/Chaktet/sc-launcher-movil</span>
+            <div class="ajFila">
+              <span class="ajCuentaBloque"><span class="ajEtiqueta">Cuenta</span><span id="ajCuenta" class="ajCuenta"></span></span>
+              <button id="btnCerrarSesion" class="btn btnRojo" type="button">Cerrar sesión</button>
+            </div>
+            <div class="ajBotones">
+              <button id="btnSoporte" class="btn" type="button">Informe para soporte</button>
+              <button id="btnAcerca" class="btn" type="button">Acerca de</button>
+            </div>
+            <span id="ajAcerca" class="ajAcerca" hidden>SC Launcher <span id="verApp"></span> · Basado en FoldCraftLauncher (FCL-Team), HMCL y Amethyst/PojavLauncher · Licencia GPL-3.0 · github.com/Chaktet/sc-launcher-movil</span>
           </div>
           <div class="ajCol sc2Frame ajColIzqAbajo">
             <select id="selPerfil" class="campo" aria-label="Modpack">

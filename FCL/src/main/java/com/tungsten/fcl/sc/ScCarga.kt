@@ -91,6 +91,7 @@ object ScCarga {
             }
 
             override fun onStop(success: Boolean, executor: TaskExecutor) {
+                if (success) ScArranque.segundosPreparacion = (System.currentTimeMillis() - inicio) / 1000
                 alVelocidad?.let { h -> runCatching { FetchTask.speedEvent.channel(FetchTask.SpeedEvent::class.java).unregister(h) } }
                 ScUi.js("scApp.cargaFin(${success})")
             }

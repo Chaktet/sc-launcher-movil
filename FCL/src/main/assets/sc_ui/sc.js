@@ -107,6 +107,17 @@
   $('btnReparar').onclick = () => dialogo('Reparar archivos', 'Se comprobarán todos los archivos del juego y se volverán a descargar los que estén mal. Tus ajustes y controles no se tocan.',
     'Cancelar', 'Reparar', () => SC.reparar())
   $('btnReintentar').onclick = () => { $('avisoError').hidden = true; SC.jugar() }
+  // Support zip (Felix 28-10): logs, crash reports and phone data in one file the player sends us through the
+  // share menu (Discord ticket, WhatsApp); the app removes tokens before zipping (ScSoporte)
+  function informeSoporte() {
+    dialogo('Informe para soporte', 'Crearemos un archivo .zip con los registros del juego, los errores y los datos del móvil ' +
+      '(modelo, memoria, versión). No incluye tu contraseña ni tu sesión.\nDespués elige dónde enviarlo: abre un ticket en Discord y adjúntalo.',
+      'Cancelar', 'Crear informe', () => { if (SC.informeSoporte) SC.informeSoporte() })
+  }
+  $('btnSoporte').onclick = informeSoporte
+  $('btnErrSoporte').onclick = informeSoporte
+  $('btnCierreSoporte').onclick = informeSoporte
+  $('btnAcerca').onclick = () => dialogo('Acerca de', $('ajAcerca').textContent.split(' · ').join('\n'), '', 'Entendido', null)
 
   // ---- Settings ----
   function pintarAjustes() {

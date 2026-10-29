@@ -152,6 +152,8 @@ object ScAuto {
 
     private const val NIVEL_MAX = 5
     private fun nivel(c: Context) = p(c).getInt(K_NIVEL, 0)
+    /** The performance step in use (0 = full graphics … 5), for the support report. */
+    fun nivelActual(c: Context) = nivel(c)
 
     /** Goes down to [n], applying every step up to it (each only lowers what is above its value). */
     private fun aplicarNivel(c: Context, opciones: File, n: Int) {

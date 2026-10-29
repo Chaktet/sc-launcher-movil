@@ -28,6 +28,7 @@ object ScAvisos {
     const val INESPERADO = "SC-43"
     const val SIN_ESPACIO = "SC-44"
     const val CIERRE = "SC-45" // the game closed with an error, sent from the error screen («Enviar informe»)
+    const val ARRANQUE_LENTO = "SC-47" // over 2 min preparing (c) or opening the game to its first frame (t), in minutes
 
     private const val PREFS = "sc"
     private const val KEY_ENVIAR = "enviar_errores"

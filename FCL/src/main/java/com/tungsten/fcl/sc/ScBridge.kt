@@ -279,6 +279,10 @@ class ScBridge(private val activity: MainActivity, private val webView: WebView)
         ScAvisos.enviar(activity, ScAvisos.CIERRE, mapOf("n" to causa, "x" to codigo))
     }
 
+    /** «Informe para soporte» (Ajustes, error card, error screen): zip of logs + phone data through the share menu. */
+    @JavascriptInterface
+    fun informeSoporte() { ScSoporte.crearYCompartir(activity) }
+
     /** «Cancelar» on the preparing screen (FCL launch steps). */
     @JavascriptInterface
     fun cancelarCarga() { ScCarga.cancelar(); ScPack.cancelar() }

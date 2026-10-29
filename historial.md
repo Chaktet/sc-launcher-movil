@@ -31,7 +31,7 @@
 - Codex: 2 hallazgos (claves SC-47 reservadas, zip borrado al pedir otro) arreglados → «Sin hallazgos». La prueba del
   emulador fallaba porque esperaba el título antiguo del aviso de actualización: arreglada; run 40807597812 todo OK.
 - Publicada por la etiqueta v0.1.21 (run 40810716001; su emulador se colgó sin log la 1ª vez y pasó al relanzarlo). sc-app.json
-  0.1.21 y los 3 APK verificados por Cloudflare (tamaño + sha256). Sin probar en un móvil real. Novedad --tipo movil: pendiente del OK de Felix.
+  0.1.21 y los 3 APK verificados por Cloudflare (tamaño + sha256). Sin probar en un móvil real. Novedad «La app del móvil, más ligera y para todos los móviles» publicada 29-10 (launcher + Discord, OK de Felix).
 
 ## 2026-10-28 · Publicar solo con la prueba del emulador en verde (sesión «Error SC-41», Felix)
 - `publicar` ahora `needs: [build, emulator]`: una etiqueta solo publica si la prueba del emulador pasa (~20 min más).

@@ -1,18 +1,36 @@
 # Historial · SC Launcher Móvil
 
 ## Estado actual
-- Publicada la **0.1.20** (28-10, versionCode 21). Base: pantallas PokéNav, modpack automático con dos perfiles (Ajustes ›
+- Publicándose la **0.1.21** (29-10, versionCode 22; etiqueta v0.1.21). Antes 0.1.20. Base: pantallas PokéNav, modpack automático con dos perfiles (Ajustes ›
   «Modpack Móvil / PRO»; `movil/sc-pack.json` y `movil/sc-pack-pro.json`, este último lo rehace solo
   `movil_pro.js` en descargas-auto), login Microsoft (código + PKCE), auto-actualización (`movil/app/sc-app.json`),
   botones táctiles del servidor (Pokémon/M, Lanzar/R, Poké ▲▼), reinstalación de instalaciones cortadas, velocidad de
-  descarga, avisos anónimos SC-40..45.
+  descarga, avisos anónimos SC-40..47, informe para soporte (zip).
 - Sacar versión: subir versionCode/versionName en `FCL/build.gradle.kts`, push a main (prueba rápida ~27 min), si pasa
   etiqueta `vX.Y.Z` en ese commit, APK de los artefactos de ese run a `movil/app/` con nombre nuevo, `sc-app.json` al
   final, comprobar por Cloudflare. Los cambios del modpack NO necesitan versión de la app.
 - NO comprobado aún: login Microsoft real, Móvil PRO en un móvil real, los menús «rotos» del S25 (esperando capturas).
 - Microsoft: app propia `b02d1916-762f-4732-ad9e-f10fc0a71fe9` pendiente de Mojang; al aprobarse, cambiar `OAUTH_API_KEY`.
+- Pendiente 0.1.21: en 1-2 días leer en stats.json los SC-40 (ahora con `k`/`f`/`h`) y los SC-47 (arranque lento,
+  Redmi 13C = `23100RN82L`) y decidir el arreglo; si los SC-40 apuntan a cdn.modrinth.com, espejo en nuestro servidor
+  como 2ª URL en `movil_auto.js`. Un móvil flojo con PRO elegido a mano nunca baja solo a Lite (1 FPS visto): proponer aviso.
 - Pendiente: quitar Terracotta/VPN y permisos sobrantes, textos legales de FCL, CurseForge, licencias/NOTICE; probar en
   Móvil PRO la carga bajo demanda de ModernFix (`mixin.perf.dynamic_resources`), sin activar aún.
+
+## 2026-10-29 · 0.1.21 pantallas que caben, informe para soporte y reintento solo (sesión «launcher móvil responsive», Felix)
+- Felix: en muchos móviles se cortan botones/textos; a muchos no les entra; 1500 s cargando en un Redmi 13C; un zip para
+  que nos manden los registros; «sube toda la actualización».
+- Pantallas: `escala.js` dibuja el diseño a 780×384 px CSS y lo escala entero en móviles más bajos (720×324 cortaba JUGAR,
+  Reparar, el evento y Ajustes). Ajustes reordenado (cuenta en una fila, créditos en «Acerca de»). Medido con
+  `E:/tmp/movil-ui/mide.js` (9 tamaños 640×288…1280×800, todas las pantallas): 44/135 casos cortados → 0.
+- «Informe para soporte» (Ajustes, tarjeta de error, pantalla de cierre): `ScSoporte` hace un zip (logs del launcher y del
+  juego, crash-reports, hs_err, options, menu_setting y resumen del móvil), quita tokens y lo abre con el menú de compartir.
+- Causa de «no les entra»: SC-40 `ModpackCompletionException` ×6 en 0.1.20 (una descarga del modpack que falla; FCL pierde
+  la causa). Los 145 archivos de los 3 modpacks bajan bien desde aquí. Ahora: 3 intentos automáticos sin perder lo bajado,
+  y SC-40 dice el paso, archivo y HTTP. Nuevo SC-47 (preparar o abrir > 2 min, minutos + modelo + gama + RAM).
+- Codex: 2 hallazgos (claves SC-47 reservadas, zip borrado al pedir otro) arreglados → «Sin hallazgos». La prueba del
+  emulador fallaba porque esperaba el título antiguo del aviso de actualización: arreglada; run 40807597812 todo OK.
+- Sin probar en un móvil real. Novedad para jugadores (--tipo movil): pendiente del OK de Felix.
 
 ## 2026-10-28 · Publicar solo con la prueba del emulador en verde (sesión «Error SC-41», Felix)
 - `publicar` ahora `needs: [build, emulator]`: una etiqueta solo publica si la prueba del emulador pasa (~20 min más).

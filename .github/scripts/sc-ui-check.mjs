@@ -233,12 +233,13 @@ shot('ui-7-vuelta')
 await ev(`SC.debug('debug_app_manifest_url', 'http://10.0.2.2:8000/sc-app.json')`)
 await ev(`SC.buscarActualizacion()`)
 // Since 0.1.6 the update downloads and installs by itself on Wi-Fi (the emulator's network is unmetered) and only
-// asks first («Nueva versión de la app» → «Actualizar») on mobile data: either way Android's installer must open.
+// asks first on mobile data, or when a modpack check is running («Nueva versión de la app», since 0.1.20 the compulsory
+// «Actualiza la app» → «Actualizar»; the old title alone made the run of 29-10 fail): either way the installer must open.
 let dialogo = false
 let instalador = ''
 for (let s = 0; s < 240 && !instalador; s += 3) {
   await sleep(3000)
-  if (!dialogo && await visible('#velo') && (await ev(`document.getElementById('dlgTitulo').textContent`)) === 'Nueva versión de la app') {
+  if (!dialogo && await visible('#velo') && ['Nueva versión de la app', 'Actualiza la app'].includes(await ev(`document.getElementById('dlgTitulo').textContent`))) {
     dialogo = true
     shot('ui-8b-app-nueva')
     await ev(`document.getElementById('dlgSi').click()`)

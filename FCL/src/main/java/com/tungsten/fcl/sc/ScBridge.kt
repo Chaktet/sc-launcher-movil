@@ -166,7 +166,8 @@ class ScBridge(private val activity: MainActivity, private val webView: WebView)
         // connection the check fails and the game starts as before (playing offline-installed stays possible).
         io.execute {
             val r = ScAppUpdate.check(activity)
-            if (r.isEmpty()) ScPack.playWhenReady(activity) else pedirActualizacion(r)
+            // an update that failed by itself (download, check) does not lock the player out
+            if (r.isEmpty() || ScAppUpdate.fallo()) ScPack.playWhenReady(activity) else pedirActualizacion(r)
         }
     }
 

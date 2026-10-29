@@ -83,6 +83,11 @@ object ScAppUpdate {
     @Volatile private var ultimoAuto = 0L
     fun puedeAuto(): Boolean { val now = System.currentTimeMillis(); if (now - ultimoAuto < 10 * 60_000) return false; ultimoAuto = now; return true }
 
+    /** The version whose download or check failed in this app run: JUGAR lets the player in instead of asking again
+     * (the update is compulsory for players who skip it, never a lock when it breaks; Felix 29-10). */
+    @Volatile private var fallida = -1L
+    fun fallo(): Boolean = pending?.versionCode == fallida
+
     private val busy = AtomicBoolean(false)
     private const val MAX_APK = 300L * 1024 * 1024
 
@@ -139,8 +144,10 @@ object ScAppUpdate {
             ScUi.js("scApp.listo()")
             activity.runOnUiThread { openInstaller(activity, apk) }
         } catch (e: ScError) {
+            fallida = p.versionCode
             ScUi.js("scApp.error(${JSONObject.quote(e.titulo)}, ${JSONObject.quote(e.texto)})")
         } catch (e: Exception) {
+            fallida = p.versionCode
             Logging.LOG.log(Level.WARNING, "SC app update failed", e)
             ScUi.js("scApp.error('No se pudo actualizar la app', 'Revisa tu conexión y vuelve a intentarlo.')")
         } finally {
@@ -155,15 +162,65 @@ object ScAppUpdate {
     private fun verifyApk(c: Context, apk: File, p: Pending) {
         val pm = c.packageManager
         val flags = if (Build.VERSION.SDK_INT >= 28) PackageManager.GET_SIGNING_CERTIFICATES else @Suppress("DEPRECATION") PackageManager.GET_SIGNATURES
-        val archive = pm.getPackageArchiveInfo(apk.path, flags)
-        val mine = pm.getPackageInfo(c.packageName, flags)
-        val ok = archive != null && archive.packageName == c.packageName &&
-            versionCode(archive) == p.versionCode && p.versionCode > currentVersionCode(c) &&
-            certs(archive).let { it.isNotEmpty() && it == certs(mine) }
-        if (!ok) {
-            apk.delete()
-            throw ScError("Actualización no válida", "La nueva versión no está firmada por el servidor. No se ha instalado nada.")
+        // 29-10: on some phones getPackageArchiveInfo gave no signer for our v2/v3-only APKs and every update stopped
+        // here («no está firmada»). The certificate is now also read from the APK Signing Block itself; package and
+        // version come from a plain read, which needs no signature parsing.
+        val archive = pm.getPackageArchiveInfo(apk.path, 0)
+        val mine = certs(pm.getPackageInfo(c.packageName, flags))
+        val delApk = runCatching { pm.getPackageArchiveInfo(apk.path, flags)?.let { certs(it) } }.getOrNull().orEmpty() +
+            runCatching { certsDelBloque(apk) }.getOrDefault(emptySet())
+        val fallo = when {
+            archive == null -> "lectura"
+            archive.packageName != c.packageName -> "paquete"
+            versionCode(archive) != p.versionCode || p.versionCode <= currentVersionCode(c) -> "version"
+            mine.isEmpty() || delApk.none { it in mine } -> "firma"
+            else -> null
+        } ?: return
+        apk.delete()
+        ScAvisos.enviar(c, "SC-48", mapOf("x" to fallo, "s" to "${Build.VERSION.SDK_INT}"))
+        throw ScError("Actualización no válida", when (fallo) {
+            "firma" -> "La nueva versión no está firmada por el servidor. No se ha instalado nada."
+            "lectura" -> "Tu móvil no pudo leer la nueva versión. No se ha instalado nada."
+            else -> "La nueva versión no coincide con la anunciada. No se ha instalado nada."
+        } + " Puedes seguir jugando.")
+    }
+
+    /** SHA-256 of the signer certificates in the APK Signing Block (v3, else v2), the same bytes Android compares. */
+    private fun certsDelBloque(apk: File): Set<String> = java.io.RandomAccessFile(apk, "r").use { f ->
+        val n = f.length()
+        val cola = ByteArray(minOf(n, 65_557L).toInt()).also { f.seek(n - it.size); f.readFully(it) }
+        val le = { b: ByteArray, o: Int -> java.nio.ByteBuffer.wrap(b, o, b.size - o).order(java.nio.ByteOrder.LITTLE_ENDIAN) }
+        var e = cola.size - 22
+        while (e >= 0 && le(cola, e).int != 0x06054b50) e--
+        if (e < 0) return emptySet()
+        val cd = (le(cola, e + 16).int.toLong() and 0xffffffffL)
+        val pie = ByteArray(24).also { f.seek(cd - 24); f.readFully(it) }
+        if (String(pie, 8, 16, Charsets.ISO_8859_1) != "APK Sig Block 42") return emptySet()
+        val tam = le(pie, 0).long
+        if (tam < 24 || tam > cd) return emptySet()
+        val bloque = ByteArray((tam - 16).toInt()).also { f.seek(cd - tam); f.readFully(it) } // id-value pairs only
+        val bb = le(bloque, 0)
+        val porId = HashMap<Int, java.nio.ByteBuffer>()
+        while (bb.remaining() >= 12) {
+            val len = bb.long.toInt(); val id = bb.int
+            val v = bb.slice().order(java.nio.ByteOrder.LITTLE_ENDIAN).apply { limit(len - 4) }
+            porId[id] = v; bb.position(bb.position() + len - 4)
         }
+        val v = porId[0xf05368c0.toInt()] ?: porId[0x7109871a] ?: return emptySet()
+        val sub = { b: java.nio.ByteBuffer -> val l = b.int; b.slice().order(java.nio.ByteOrder.LITTLE_ENDIAN).apply { limit(l) }.also { b.position(b.position() + l) } }
+        val firmantes = sub(v)
+        val out = HashSet<String>()
+        while (firmantes.hasRemaining()) {
+            val datos = sub(sub(firmantes)) // signer → signed data
+            sub(datos) // digests
+            val certs = sub(datos)
+            while (certs.hasRemaining()) {
+                val cert = sub(certs)
+                val bytes = ByteArray(cert.remaining()).also { cert.get(it) }
+                out += MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+            }
+        }
+        out
     }
 
     private fun versionCode(info: PackageInfo): Long =

@@ -65,7 +65,9 @@ android {
         }
         // minSdk 26 ≥ 24，v1 已无必要，统一启用 v2 + v3 签名方案
         configureEach {
-            enableV1Signing = false
+            // SC 29-10: v1 back on next to v2/v3: some phones read no signer from a v2/v3-only APK before it is
+            // installed (getPackageArchiveInfo), and the app updater of 0.1.20/0.1.21 then refused every update
+            enableV1Signing = true
             enableV2Signing = true
             enableV3Signing = true
         }
@@ -78,8 +80,8 @@ android {
         targetSdk = libs.versions.targetSdk.get().toInt()
         // SC: our own version line (FCL base: 1.3.4.2). Bump both on every published APK; the app updater compares versionCode.
         // -PscVersionCode / -PscVersionName only for CI's test update APK (a "newer" copy of the debug build)
-        versionCode = (project.findProperty("scVersionCode") as String?)?.toInt() ?: 22
-        versionName = (project.findProperty("scVersionName") as String?) ?: "0.1.21"
+        versionCode = (project.findProperty("scVersionCode") as String?)?.toInt() ?: 23
+        versionName = (project.findProperty("scVersionName") as String?) ?: "0.1.22"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {

@@ -1,6 +1,7 @@
 # Historial · SC Launcher Móvil
 
 ## Estado actual
+- **29-10 · 0.1.21 RETIRADA, publicador PAUSADO:** `movil/app/sc-app.json` vuelve a 0.1.20 (copia de la 0.1.21 en `sc-app.json.bak-0.1.21-retirada`) y la línea de `app_movil.js` del cron de OVH-A está comentada (`#PAUSADO-20261029`, copia `descargas-auto/crontab.bak-20261029`). Motivo: móviles en 0.1.20 recibían «Actualización no válida… no está firmada» y, con la actualización obligatoria, no podían jugar. La 0.1.21 SÍ está firmada con nuestra clave: algunos Android no leen el firmante de un APK solo v2/v3. Arreglo en la 0.1.22 (9f8ac543). No reactivar el cron sin decidir cómo publicar la 0.1.22.
 - Publicada la **0.1.21** (29-10, versionCode 22). Base: pantallas PokéNav, modpack automático con dos perfiles (Ajustes ›
   «Modpack Móvil / PRO»; `movil/sc-pack.json` y `movil/sc-pack-pro.json`, este último lo rehace solo
   `movil_pro.js` en descargas-auto), login Microsoft (código + PKCE), auto-actualización (`movil/app/sc-app.json`),

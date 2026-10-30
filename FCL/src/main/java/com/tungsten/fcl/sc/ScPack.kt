@@ -161,6 +161,8 @@ object ScPack {
         if (!running.compareAndSet(false, true)) {
             // the background check is running: JUGAR starts as soon as it ends (it never repeats its work)
             if (enFondo && !forceRepair) { jugarPendiente = activity; ScUi.js("scApp.progreso('Terminando una revisión de archivos…', -1, '')") }
+            // a cancelled run still finishing its current file: say so instead of doing nothing
+            else if (cancelado) ScUi.js("scApp.progreso('Cancelando…', -1, '')")
             return
         }
         cancelado = false
@@ -606,6 +608,9 @@ object ScPack {
         val files = index.getAsJsonArray("files")
         val root = runDir.canonicalFile
         files.forEachIndexed { i, el ->
+            // 29-10: «Reparar archivos» never looked at Cancelar, so it ran to the end with the button stuck on
+            // «Cancelando…» and every new try did nothing until then
+            siCancelado()
             val f = el.asJsonObject
             val env = f.getAsJsonObject("env")
             if (env != null && env.get("client")?.asString == "unsupported") return@forEachIndexed
@@ -625,13 +630,15 @@ object ScPack {
                 val c = URL(url).openConnection() as HttpURLConnection
                 c.connectTimeout = 15000
                 c.readTimeout = 30000
+                conexionActual = c // Cancelar cuts it
                 try {
                     if (c.responseCode != 200) throw IllegalStateException("HTTP ${c.responseCode}")
                     c.inputStream.use { inp -> tmp.outputStream().use { inp.copyTo(it, 64 * 1024) } }
                 } finally {
+                    conexionActual = null
                     c.disconnect()
                 }
-            }.onFailure { tmp.delete(); throw ScError("No se pudo descargar", "Falló la descarga de ${dest.name}. Revisa tu conexión.") }
+            }.onFailure { tmp.delete(); siCancelado(); throw ScError("No se pudo descargar", "Falló la descarga de ${dest.name}. Revisa tu conexión.") }
             if (hash(tmp, "SHA-1") != sha1) {
                 tmp.delete()
                 throw ScError("Descarga dañada", "${dest.name} llegó dañado. Vuelve a intentarlo.")
@@ -654,6 +661,7 @@ object ScPack {
                     e.name.substringAfter('/').let { it.startsWith("mods/") || it.startsWith("resourcepacks/") }
             }
             entries.forEachIndexed { i, e ->
+                siCancelado()
                 val rel = e.name.substringAfter('/')
                 val dest = File(root, rel).canonicalFile
                 if (!dest.path.startsWith(root.path + File.separator)) throw ScError("Modpack no válido", "Ruta no permitida: $rel")

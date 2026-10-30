@@ -13,9 +13,19 @@ adb shell wm size 2340x1080
 adb shell wm density 450
 
 alive_check() { # $1 = package, $2 = tag
+  # Same as the debug launch below: right after boot Google Play services restarts and Android kills any app using its
+  # font provider («depends on provider … FontsProvider in dying proc»). That is the emulator, not the app (it failed
+  # the 0.1.20 and 0.1.22 runs): let it settle, and launch again once if that is what killed it.
+  sleep 60
+  local intento
+  for intento in 1 2; do
   adb logcat -c
   adb shell monkey -p "$1" -c android.intent.category.LAUNCHER 1 >/dev/null
   sleep 40
+  [ -n "$(adb shell pidof "$1" | tr -d '\r')" ] && break
+  adb logcat -d | grep -q "Killing.*$1.*FontsProvider in dying proc" || break
+  echo "$2 launch $intento: killed by the Play services restart, launching again" | tee -a evidence/apk.txt
+  done
   adb shell screencap -p /sdcard/s.png && adb pull /sdcard/s.png "evidence/$2-arranque.png" >/dev/null
   adb logcat -d > "evidence/$2-logcat.txt"
   local pid; pid=$(adb shell pidof "$1" | tr -d '\r')

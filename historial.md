@@ -15,6 +15,13 @@
 - Pendiente 0.1.21: en 1-2 días leer en stats.json los SC-40 (ahora con `k`/`f`/`h`) y los SC-47 (arranque lento,
   Redmi 13C = `23100RN82L`) y decidir el arreglo; si los SC-40 apuntan a cdn.modrinth.com, espejo en nuestro servidor
   como 2ª URL en `movil_auto.js`. Un móvil flojo con PRO elegido a mano nunca baja solo a Lite (1 FPS visto): proponer aviso.
+- **08-11 · Medición de SC-46 mal (leído en el código, sin arreglar):** `FCLBridge.getFps()` devuelve los fotogramas
+  desde la última lectura y lo pone a 0 (`jni/egl_bridge.c`:437). `ScAuto.vigilarRendimiento` lo lee cada 5 s
+  (`ScAuto.kt`:279), así que cada muestra es ≈ 5× los FPS reales y el umbral 20 equivale a ~4 FPS. Con «mostrar FPS»
+  activado, `GameMenu.java`:1456-1459 lee el mismo contador cada 1 s y el vigilante ve menos de lo real: puede bajar
+  la calidad sin motivo. Los 120 s de espera empiezan antes de que el juego abra (2-13 min según SC-47), y «calor»
+  durante la carga sale con `f=0`. SC-47 hoy (19 jugadores): `u=0`, `t` = 2-13 min, 12 de 19 de gama alta.
+  El monitor ya solo avisa de SC-46/47 a partir de 15 por hora (cobblemon-web `b353ece2`).
 - Pendiente: quitar Terracotta/VPN y permisos sobrantes, textos legales de FCL, CurseForge, licencias/NOTICE; probar en
   Móvil PRO la carga bajo demanda de ModernFix (`mixin.perf.dynamic_resources`), sin activar aún.
 

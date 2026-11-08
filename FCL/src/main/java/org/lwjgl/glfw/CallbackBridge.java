@@ -495,6 +495,9 @@ public class CallbackBridge {
 
     public static native int getFps();
 
+    // SC: frames since start, never reset (egl_bridge.c); ScAuto measures FPS with it
+    public static native long getFramesTotal();
+
     private static native ByteBuffer nativeCreateGamepadButtonBuffer();
     private static native ByteBuffer nativeCreateGamepadAxisBuffer();
 

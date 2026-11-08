@@ -61,6 +61,9 @@ static int lastSwapInterval = -1;
 #define RENDERER_VULKAN 4
 
 static atomic_uint fps = 0;
+// SC: frames since start, never reset. getFps() resets fps on every read and two readers share it (the FPS overlay
+// every 1 s and ScAuto every 5 s), so ScAuto reads this one and divides by its own elapsed time.
+static atomic_ullong sc_frames_total = 0;
 
 EXTERNAL_API void pojavTerminate() {
     printf("EGLBridge: Terminating\n");
@@ -371,6 +374,7 @@ EXTERNAL_API void pojavSetWindowHint(int hint, int value) {
 
 EXTERNAL_API void pojavSwapBuffers() {
     atomic_fetch_add(&fps, 1);
+    atomic_fetch_add(&sc_frames_total, 1);
     // SDL 模式（config_renderer 未匹配任何渲染桥）下这些调用必须为 no-op，
     // 否则 br_* 函数指针为 NULL 会空指针崩溃（fixPojavGLContext 路径）
     if (pojav_environ->config_renderer == RENDERER_VK_ZINK
@@ -437,12 +441,19 @@ Java_org_lwjgl_glfw_CallbackBridge_getFps(JNIEnv *env, jclass clazz) {
     return atomic_exchange(&fps, 0);
 }
 
+JNIEXPORT jlong JNICALL
+Java_org_lwjgl_glfw_CallbackBridge_getFramesTotal(JNIEnv *env, jclass clazz) {
+    return (jlong) atomic_load(&sc_frames_total);
+}
+
 // SDL 路径下由 eglSwapBuffers 代理调用来计帧（sdl_hook.c）
 EXTERNAL_API void calculateFPS(void) {
     atomic_fetch_add(&fps, 1);
+    atomic_fetch_add(&sc_frames_total, 1);
 }
 
 EXTERNAL_API JNIEXPORT void JNICALL
 Java_org_lwjgl_vulkan_VK_updateFps(ABI_COMPAT JNIEnv *env, ABI_COMPAT jclass thiz) {
     atomic_fetch_add(&fps, 1);
+    atomic_fetch_add(&sc_frames_total, 1);
 }

@@ -262,8 +262,16 @@ object ScAuto {
         val c = activity.applicationContext
         Thread({
             runCatching {
+                // measuring starts 2 min after the game's first frame, not after the menu opens: loading takes 2-13 min
+                // on phones (SC-47) and used to count as heat with 0 FPS
+                while (!activity.isFinishing && ScArranque.primerFotograma == 0L) Thread.sleep(5_000)
+                if (activity.isFinishing) return@Thread
                 Thread.sleep(120_000)
                 val muestras = ArrayDeque<Int>()
+                // real FPS = frames drawn / seconds elapsed, from a counter nobody resets: getFps() returned the frames
+                // since ANY last read (5 s worth here = 5x the real FPS, and less with the FPS overlay reading it too)
+                var fotogramas = FCLBridge.getFramesTotal()
+                var instante = android.os.SystemClock.elapsedRealtime()
                 var suma = 0L; var cuenta = 0
                 val pm = c.getSystemService(Context.POWER_SERVICE) as PowerManager
                 val lento = { causa: String, fps: Int ->
@@ -276,8 +284,12 @@ object ScAuto {
                     if (Build.VERSION.SDK_INT >= 29 && pm.currentThermalStatus >= PowerManager.THERMAL_STATUS_SEVERE) {
                         lento("calor", if (cuenta > 0) (suma / cuenta).toInt() else 0); return@Thread
                     }
-                    val fps = FCLBridge.getFps()
-                    if (fps <= 0) continue
+                    val ahoraF = FCLBridge.getFramesTotal()
+                    val ahoraT = android.os.SystemClock.elapsedRealtime()
+                    val ms = ahoraT - instante
+                    val fps = if (ms > 0) ((ahoraF - fotogramas) * 1000 / ms).toInt() else 0
+                    fotogramas = ahoraF; instante = ahoraT
+                    if (fps <= 0) continue  // paused or in the background: no frames, not a slow game
                     suma += fps; cuenta++
                     muestras.addLast(fps); if (muestras.size > 24) muestras.removeFirst()
                     if (muestras.size == 24 && muestras.average() < 20) { lento("fps", muestras.average().toInt()); return@Thread }

@@ -444,6 +444,11 @@ public class FCLBridge {
         return CallbackBridge.getFps();
     }
 
+    // SC: see CallbackBridge.getFramesTotal
+    public static long getFramesTotal() {
+        return CallbackBridge.getFramesTotal();
+    }
+
     public String getModSummary() {
         return modSummary;
     }

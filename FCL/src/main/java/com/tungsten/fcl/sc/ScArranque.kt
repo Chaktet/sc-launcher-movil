@@ -23,6 +23,9 @@ object ScArranque {
     private var inicio = 0L
     private var contexto: android.content.Context? = null
     @Volatile @JvmStatic var segundosPreparacion = 0L
+    // when this game drew its first frame (0 = not yet): ScAuto only starts measuring FPS and heat after it, because
+    // loading takes 2-13 min on phones and its 0 FPS / heat are not the game's performance (08-11)
+    @Volatile @JvmStatic var primerFotograma = 0L
     private const val LENTO_S = 120
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -31,6 +34,7 @@ object ScArranque {
         // a game that died before its first frame leaves the old activity's page behind: start over
         if (webView?.context === activity) return
         webView = null
+        primerFotograma = 0L
         inicio = System.currentTimeMillis()
         contexto = activity.applicationContext
         val wv = WebView(activity)
@@ -58,6 +62,7 @@ object ScArranque {
     /** First game frame (UI thread); also called again when the surface is recreated, so it must be idempotent. */
     @JvmStatic
     fun quitar() {
+        if (primerFotograma == 0L) primerFotograma = System.currentTimeMillis()
         val wv = webView ?: return
         webView = null
         avisarSiLento()

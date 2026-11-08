@@ -25,6 +25,19 @@
 - Pendiente: quitar Terracotta/VPN y permisos sobrantes, textos legales de FCL, CurseForge, licencias/NOTICE; probar en
   Móvil PRO la carga bajo demanda de ModernFix (`mixin.perf.dynamic_resources`), sin activar aún.
 
+## 2026-11-08 · 0.1.24 FPS reales para la escalera automática (Felix «sí, arréglala»), SIN publicar
+- Causa: `getFps()` pone el contador a 0 en cada lectura; ScAuto leía cada 5 s (≈5× los FPS reales, umbral 20 ≈ 4 FPS
+  reales, subir con 45 ≈ 9) y con «mostrar FPS» el vigilante veía menos de lo real. Los 120 s empezaban con la carga
+  (2-13 min) y daban «calor» con f=0.
+- `265a1d13`: contador nativo que nadie pone a 0 (`sc_frames_total`, `CallbackBridge.getFramesTotal`), FPS =
+  fotogramas / tiempo transcurrido; el vigilante espera al primer fotograma (`ScArranque.primerFotograma`) + 120 s.
+  Efecto: ahora 20/45 son FPS de verdad: más móviles bajarán de escalón y menos subirán. Versión 0.1.24 (code 25),
+  incluye la 0.1.23 (Cancelar en «Reparar archivos»), que nunca se publicó.
+- `f868195d`: la prueba del emulador esperaba SC-Pack-Movil en PRO; desde el 27-10 PRO lleva el SC-Pack de PC (por eso
+  fallaban los runs de la 0.1.23). Run 42506950728: 3 compilaciones + emulador OK; `getFramesTotal` está en
+  `libpojavexec.so` del APK arm64. NO comprobado en marcha: el emulador solo juega 60 s y no llega al primer fotograma.
+- Pendiente: publicar (etiqueta `v0.1.24`, APKs a `movil/app/`, `sc-app.json`; cron de `app_movil.js` sigue pausado).
+
 ## 2026-10-29 · 0.1.21 pantallas que caben, informe para soporte y reintento solo (sesión «launcher móvil responsive», Felix)
 - Felix: en muchos móviles se cortan botones/textos; a muchos no les entra; 1500 s cargando en un Redmi 13C; un zip para
   que nos manden los registros; «sube toda la actualización».

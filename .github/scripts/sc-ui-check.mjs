@@ -288,7 +288,9 @@ const modsPro = listaMods()
 comprueba(modsPro.length > mods.length && modsPro.some((m) => m.startsWith('entity_model_features')) && !modsPro.some((m) => /^(Ixeris|iris-fabric|BorderlessFullscreen)/.test(m)),
   `PRO has its mods without the desktop-only ones (${modsPro.length} jars)`)
 comprueba(adb('cat', `'${run}/options.txt'`).includes('sc_ci_option:1'), "the player's options.txt survived the switch to PRO")
-comprueba(/file\/SC-Pack-Movil\.zip/.test(adb('grep', 'resourcePacks', `'${run}/options.txt'`)), 'PRO uses the phone resource pack')
+// PRO keeps the PC SC-Pack.zip whole (Felix 27-10, movil_pro.js), not the phone pack
+const packsPro = adb('grep', 'resourcePacks', `'${run}/options.txt'`)
+comprueba(/file\/SC-Pack\.zip/.test(packsPro) && !/file\/SC-Pack-Movil\.zip/.test(packsPro), 'PRO uses the PC resource pack (SC-Pack.zip)')
 comprueba((await ev(`document.getElementById('perfilDetalle').textContent`)).startsWith('Modpack Móvil PRO'), 'home card shows Móvil PRO')
 await elige('movil')
 const t4 = Date.now()

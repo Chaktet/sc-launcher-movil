@@ -3,9 +3,11 @@
 ## Estado actual
 - **12-11 · Arranque rápido: fases 0, 2a, 1a y 1b construidas, 1c descartada** (`docs/PLAN-ARRANQUE-RAPIDO.md`, «Status»).
   App **0.1.25** (code 26) SIN publicar (el cron sigue pausado). 1a = rama `perf/pantallas-rapido` de sc-menus-cliente,
-  1b = sc-memoria-cliente 1.7.0 en la rama `perf/showdown-sin-esperar`: ninguna está en un modpack. Pendiente: probar la
-  1b en un cliente (pantalla de título, combate multijugador, mundo individual) antes de meterla en un pack; fusionar
-  ambas ramas en las líneas que se publican; publicar 0.1.25; en 2 días leer SC-47 por `g` con las claves nuevas.
+  1b = sc-memoria-cliente 1.7.0 en la rama `perf/showdown-sin-esperar`: ninguna está en un modpack. 1b PROBADA 12-11 en el
+  cliente de pruebas (mundo individual): el hilo principal no espera, Showdown arranca en paralelo, el servidor integrado
+  carga 1025 especies y un combate salvaje abre «Elige una acción»; multijugador no probado (el cliente no usa Showdown ahí).
+  **Felix 12-11: publicar 0.1.25 (cron sigue pausado) y sacar un pack móvil nuevo con 1a+1b.** Relevo:
+  E:/tmp/relevos/2026-11-12-publicar-arranque-rapido.md. Luego, en 2 días, leer SC-47 por `g` con las claves nuevas.
 
 ## 2026-11-12 · Arranque rápido del móvil, fases 0 + 2a + 1a + 1b (sesión hija, Felix: «que no tarde tantísimo»)
 - Codex revisó el plan (10 hallazgos, todos aplicados). El más serio: `a`/`r`/`p` chocaban con claves fijas de ScAvisos.

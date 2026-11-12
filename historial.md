@@ -5,6 +5,11 @@
   2.4.50-lite-r2 con sc-menus-cliente **1.8.2** (1a) y sc-memoria-cliente **1.7.0** (1b). Móvil PRO 2.4.50-1.1.125-r9
   sigue con los jars de PC (1.8.1 / 1.6.0): le llegan cuando salgan en el pack de PC. Novedad: Felix dijo «No se publica
   esto» (vista previa 1570471756148252764 en diseño-pruebas, sin publicar).
+- **PC (Felix «También en PC», 12-11):** sc-memoria-cliente **1.7.0** publicada en PRO/LITE/SUPER LITE del launcher
+  (manifiesto 89e06608, copia `launcher/_backup-arranque-rapido-20261112-170152/`, Cloudflare OK; copia local sincronizada).
+  sc-menus-cliente NO: otra sesión publicó la **1.9.0** (cartel de reinicio) en PC justo antes; la 1.8.2 la habría
+  quitado. El 1a llega a PC (y a Móvil PRO, que coge los mods de PC) cuando `6368466` se fusione en la rama de la 1.9.x.
+  Móvil/Lite siguen con 1.8.2 (sin cartel) hasta que haya una 1.9.x con el 1a.
 - **El cron de `app_movil.js` está ACTIVO** (crontab de OVH-A, sin `#PAUSADO`): publicó la 0.1.24 sola el 08-11 y la
   0.1.25 el 12-11. Una etiqueta `vX.Y.Z` = publicación a todos en cuanto la CI pasa.
 - Pendiente: en 2 días leer SC-47 por `g` con las claves nuevas (`k`, `d`, `h`, `s`) y comparar con antes del 12-11.

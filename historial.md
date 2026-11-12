@@ -1,6 +1,9 @@
 # Historial · SC Launcher Móvil
 
 ## Estado actual
+- **12-11 · Plan «arranque rápido» escrito, SIN construir:** `docs/PLAN-ARRANQUE-RAPIDO.md`. SC-47 dice `u`=0 y `t`=2-13 min:
+  la espera está dentro del arranque de Minecraft, no en el launcher. No hay ningún log de arranque de un móvil real:
+  la fase 0 (medir por tramos en SC-47) va primero. Pendiente: revisión de Codex del plan y construirlo (Opus 5.5).
 - **29-10 · 0.1.21 RETIRADA, publicador PAUSADO:** `movil/app/sc-app.json` vuelve a 0.1.20 (copia de la 0.1.21 en `sc-app.json.bak-0.1.21-retirada`) y la línea de `app_movil.js` del cron de OVH-A está comentada (`#PAUSADO-20261029`, copia `descargas-auto/crontab.bak-20261029`). Motivo: móviles en 0.1.20 recibían «Actualización no válida… no está firmada» y, con la actualización obligatoria, no podían jugar. La 0.1.21 SÍ está firmada con nuestra clave: algunos Android no leen el firmante de un APK solo v2/v3. Arreglo en la 0.1.22 (9f8ac543). No reactivar el cron sin decidir cómo publicar la 0.1.22.
 - Publicada la **0.1.21** (29-10, versionCode 22). Base: pantallas PokéNav, modpack automático con dos perfiles (Ajustes ›
   «Modpack Móvil / PRO»; `movil/sc-pack.json` y `movil/sc-pack-pro.json`, este último lo rehace solo

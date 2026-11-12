@@ -64,6 +64,10 @@ object ScArranque {
     private val RE_MODS = Regex("Loading (\\d+) mods")
     private val RE_PANTALLAS = Regex("\\[SC Menus] screens .*checked in ([0-9.]+) s")
     private const val PREFS = "sc_arranque"
+    // a slow start's SC-47, kept until it is sent: the game can close before the menu or the 10-min fallback
+    private const val K_PENDIENTE = "sc47_pendiente"
+    // stdout arrives in chunks that can cut a line in two: markers are looked for in whole lines only (Codex 12-11)
+    private val resto = StringBuilder()
 
     @SuppressLint("SetJavaScriptEnabled")
     @JvmStatic
@@ -81,6 +85,8 @@ object ScArranque {
         primeraVez = false
         mods = 0
         enviado = false
+        synchronized(resto) { resto.setLength(0) }
+        enviarPendiente(activity.applicationContext)
         segundosPrep = segundosPreparacion
         segundosPreparacion = 0
         claveHistorial = runCatching {
@@ -119,6 +125,21 @@ object ScArranque {
     fun linea(log: String) {
         if (!siguiendo) return
         val ms = SystemClock.elapsedRealtime() - inicioMono
+        val lineas: List<String>
+        synchronized(resto) {
+            resto.append(log)
+            val fin = resto.lastIndexOf("\n")
+            if (fin < 0) {
+                if (resto.length > 16_384) resto.setLength(0) // no newline for 16 KB: not a log line worth keeping
+                return
+            }
+            lineas = resto.substring(0, fin).split('\n')
+            resto.delete(0, fin + 1)
+        }
+        for (l in lineas) if (siguiendo) unaLinea(l, ms)
+    }
+
+    private fun unaLinea(log: String, ms: Long) {
         var cambio = false
         if (!primeraVez && log.contains("preparing JARs on first launch")) { primeraVez = true; cambio = true }
         if (!marcas.containsKey("l") && log.contains(" mods")) RE_MODS.find(log)?.let {
@@ -157,6 +178,7 @@ object ScArranque {
             segundosHastaFotograma = (primerFotograma - inicio) / 1000
             guardarHistorial()
             registrar("fotograma")
+            guardarPendiente()
             // the menu is ready later (resource reload under Minecraft's own loading bar): ModernFix's «Game took» line
             // sends SC-47 then; this is the fallback when that line never comes
             val esta = inicioMono
@@ -206,14 +228,39 @@ object ScArranque {
         }
     }
 
+    private fun lento(): Boolean =
+        segundosHastaFotograma >= LENTO_S || segundosPrep >= LENTO_S || (marcas["h"] ?: 0L) >= LENTO_S * 1000L
+
     private fun enviarSiLento() {
         val c = contexto ?: return
         if (enviado || inicio == 0L) return
         enviado = true
-        val hMs = marcas["h"] ?: 0L
-        if (segundosHastaFotograma < LENTO_S && segundosPrep < LENTO_S && hMs < LENTO_S * 1000L) return
+        prefs(c).edit().remove(K_PENDIENTE).apply()
+        if (!lento()) return
         ScAvisos.enviar(c, ScAvisos.ARRANQUE_LENTO, extras(c))
     }
+
+    /** At the first frame of a start already known to be slow: what would be sent now, in case the game closes first. */
+    private fun guardarPendiente() {
+        val c = contexto ?: return
+        if (!lento()) return
+        runCatching { prefs(c).edit().putString(K_PENDIENTE, JSONObject(extras(c) as Map<*, *>).toString()).apply() }
+    }
+
+    /** The previous start's SC-47 that never went out (the game closed before the menu): sent on the next start. */
+    private fun enviarPendiente(c: Context) {
+        val p = prefs(c)
+        val txt = p.getString(K_PENDIENTE, null) ?: return
+        p.edit().remove(K_PENDIENTE).apply()
+        runCatching {
+            val o = JSONObject(txt)
+            val m = linkedMapOf<String, String>()
+            for (k in o.keys()) m[k] = o.getString(k)
+            ScAvisos.enviar(c, ScAvisos.ARRANQUE_LENTO, m)
+        }
+    }
+
+    private fun prefs(c: Context) = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     // ---- phase 2a: the page's stage, progress and time left ----
 

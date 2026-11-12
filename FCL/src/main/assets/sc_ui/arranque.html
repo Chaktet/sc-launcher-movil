@@ -131,10 +131,11 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--rojo
       for (var i = 0; i < orden.length; i++) {
         if (M[orden[i]] != null) { hBase = H[orden[i]]; desde = M[orden[i]]; hSig = i + 1 < orden.length ? H[orden[i + 1]] : H.d; }
       }
-      var dentro = Math.min(0.95 * (hSig - hBase), Math.max(0, t - desde));
+      // this stage already took longer than last time, or the whole estimate is passed: no promise, only the stage
+      // (Codex 12-11: capping the stage at 95 % kept «Quedan unos 25 s» on screen for minutes)
+      if (t - desde > hSig - hBase || t > H.d) return { frac: Math.min(0.97, Math.max(hSig / H.d, 0.05)), quedan: -1, tarde: true };
+      var dentro = Math.max(0, t - desde);
       var quedan = (hSig - hBase - dentro) + (H.d - hSig);
-      // passed the previous start by half: no promise, only the stage
-      if (t > H.d * 1.5) return { frac: 0.95, quedan: -1, tarde: true };
       return { frac: Math.min(0.97, (hBase + dentro) / H.d), quedan: Math.max(0, quedan) };
     }
     ['l', 's', 'k'].forEach(function (k) { if (M[k] != null) { base = FIJO[k]; desde = M[k]; } });

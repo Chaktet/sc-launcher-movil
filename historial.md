@@ -3,9 +3,9 @@
 ## Estado actual
 - **12-11 · Fase 3 (Pokémon bajo demanda) LISTA, sin publicar:** sc-memoria-cliente **1.8.0**, rama
   `perf/pokemon-bajo-demanda` (worktree `E:/PROYECTOS-MC/sc-memoria-cliente-pokemon`, sobre la 1.7.0, último commit
-  `7854bd2`). Codex «Sin hallazgos» en la ronda 3 de cierre del diff. Pendiente: el OK de Felix para meterla en el
-  próximo pack Móvil (jar `build/libs/sc-memoria-cliente-1.8.0.jar` de esa rama). Sin verificar: móvil real, montar,
-  multijugador.
+  `7854bd2`). Codex «Sin hallazgos» en la ronda 3 de cierre del diff. **Felix (12-11): «Al próximo pack Móvil»**: el
+  próximo `--rehacer-movil` lleva este jar (`build/libs/sc-memoria-cliente-1.8.0.jar` de esa rama, o rehacerlo allí;
+  sustituye a la 1.7.0, un solo jar). Sin probar antes en móvil real. Sin verificar: móvil real, montar, multijugador.
 - **12-11 · Arranque rápido PUBLICADO:** app **0.1.25** (code 26) en vivo y modpack **Móvil 2.4.50** / Lite
   2.4.50-lite-r2 con sc-menus-cliente **1.8.2** (1a) y sc-memoria-cliente **1.7.0** (1b). Móvil PRO 2.4.50-1.1.125-r9
   sigue con los jars de PC (1.8.1 / 1.6.0): le llegan cuando salgan en el pack de PC. Novedad: Felix dijo «No se publica

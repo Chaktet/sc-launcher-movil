@@ -11,7 +11,7 @@
 - Codex revisó el plan (10 hallazgos, todos aplicados). El más serio: `a`/`r`/`p` chocaban con claves fijas de ScAvisos.
 - App 0.1.25 (70163a8f + 2c213f66): `ScArranque` lee la salida del juego (`GameMenu.onLog`, líneas completas, reloj
   monotónico) → SC-47 con `l s k d h e n f`, línea «SC arranque:» en fcl.log en cada arranque; pantalla de arranque con
-  etapa, barra y «Quedan unos …» aprendido del arranque anterior. Codex de fondo: 3 fallos arreglados.
+  etapa, barra y «Quedan unos …» aprendido del arranque anterior. Felix la aprobó viendo 4 capturas (12-11). Codex de fondo: 3 fallos arreglados.
 - 1a `6368466`: sello `rapido.txt`, 65 archivos en vez de 6.888-10.366 (8,8 s en el emulador); SyncerTest 26/26.
 - 1b `2a5d50b`+`9b72653`: Cobblemon 1.8.3 bloquea el hilo principal en `ShowdownThread.launch()`; ahora arranca en
   paralelo y esperan solo `getService()`/`queue()`. Compila; NO probado en un cliente. 1c descartada (≤1 s, ver plan).

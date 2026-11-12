@@ -14,6 +14,32 @@
 ## Estado actual
 - **12-11 · App 0.1.26 PUBLICADA** (code 27, 20:42Z): en Móvil PRO el botón «Pokémon» (M) abría el mapa de Xaero; ahora las teclas del
   .mrpack llegan al cambiar de perfil y el mapa pasa a N. Emulador completo 49 OK; los 3 APK por Cloudflare OK. Sin móvil real.
+- **12-11 · Arranque en PC: sc-memoria-cliente 1.9.0 CONSTRUIDA, nada publicado** (Felix OK a pasos 2 y 3; rama
+  `perf/fancymenu-lectura-adelantada` 27f0e93, worktree `E:/PROYECTOS-MC/sc-memoria-cliente-fancy`, plan en su
+  `docs/PLAN-ARRANQUE-PC.md`). 1.9.0 = 1.8.0 (Pokémon bajo demanda) + lectura adelantada de los 5.763 layouts de
+  FancyMenu (111 MB) en 4 hilos desde el entrypoint `client`; cada fichero se usa solo si sus bytes no cambiaron
+  (longitud + CRC32), si no FancyMenu lo lee como siempre; nunca espera. Interruptor
+  `fancymenu_lectura_adelantada=false`. Codex: plan (9 hallazgos, incorporados), código ronda 1 (5, arreglados),
+  ronda 2 «Sin hallazgos». Huella de todos los layouts on/off idéntica, también con un fichero cambiado a mitad.
+  Medido (copia `E:/tmp/arranque-pc/`, CPU NO libre, alternado): 1.7.0→1.8.0 total 72-84 → 52-68 s (Cobblemon 20-23 → 1 s);
+  1.8.0→1.9.0 a 13-19 % CPU 36 → 33 s, a 45-55 % 50 → 42 s; `LayoutHandler.init` 2,8-5,6 s; con -Xmx2G (SUPER LITE)
+  pico de heap igual (1,02 GB), pausas GC +0,4 s en total. **Falta:** 3+3 arranques con CPU libre (Felix avisa
+  cuando cierre los otros juegos) para la tabla final; prueba en mundo (5 especies, F3+T) en PC; publicar en
+  PRO/LITE/SUPER LITE solo con su OK (método `E:/tmp/arranque-rapido/pc/`). Paso 4 (Fabric/AppCDS) sin empezar.
+- **12-11 · Arranque en PC MEDIDO (solo medición, nada publicado).** 3 arranques en copia propia del cliente
+  (`E:/tmp/arranque-pc/`: mods del perfil de Felix sin lockserver + sc-memoria 1.7.0, sc-avisos 1.7.0, sc-menus 1.9.0,
+  SC-Pack de Felix, hasta el título, JFR `settings=profile` desde el JVM; ficheros `med/run{1,2,3}.{jfr,log}`,
+  scripts `analiza.js`, `corre.sh`). **CPU NO libre**: 3 javaw más abiertos (juego de Felix, cliente de otra sesión,
+  otro) ≈ 45-60 % de CPU → totales ×1,4 frente a los 67 s limpios de Felix. Run1 195 s (frío: 1ª vez que Windows lee la
+  copia), run2 88 s, run3 94 s. Tramos run2/run3 (s): JVM+Fabric+mixins 19/15 · init cliente (Setting user→Backend) 13/13 ·
+  →Reloading 3/4 · **Reloading→Drippy 25/23** · Drippy→Loading assets 6/10 · **Cobblemon assets 23/29** · →título 1/2.
+  Método dominante por tramo (cuota de muestras del hilo): JVM+Fabric: `ZipFile$Source.getEntryPos` 27 % (búsqueda de clases
+  en ~90 jars, KnotClassLoader) + ASM/Mixin; init cliente: igual (KnotClassLoader 30 %); **Reloading→Drippy (el «hueco»)**:
+  Render = FancyMenu `PropertiesParser`/`LayoutBase.convertContainerToSerializedElement`/`PropertyContainer` ≈ 70 % del
+  hilo (parsea ~105 MB de layouts, 1.367 ficheros) y los workers cosen atlas (`SpriteContents.sodium$fillInTransparentPixelColors`
+  7-33 %, FerriteCore Deduplicator, fastutil); **assets Cobblemon**: `com.bedrockk.molang.parser.tokenizer.TokenIterator.next`
+  26 % + Guava `MapMakerInternalMap$Segment.getEntry` 10 % (el interner de cadenas) + Gson. GC: 1,4-1,7 s por tramo grande.
+  Limitación: JFR submuestrea el Render thread con muchos hilos activos → usar cuotas dentro del hilo, no tiempos absolutos.
 - **12-11 · Fase 3 PUBLICADA: Móvil 2.4.55 / Lite 2.4.55-lite-r2 con sc-memoria-cliente 1.8.0** (Pokémon bajo
   demanda; sustituye a la 1.7.0, un solo jar; rama `perf/pokemon-bajo-demanda` 7854bd2). Llevan además sc-menus 1.9.0 y
   sc-avisos 1.7.0 (de la 2.4.53/2.4.54 de otras sesiones). PRO 2.4.55-1.1.129-r9 sigue con la 1.7.0 de PC. Sin verificar:

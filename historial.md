@@ -1,10 +1,11 @@
 # Historial · SC Launcher Móvil
 
 ## Estado actual
-- **12-11 · Fase 3 (Pokémon bajo demanda) CONSTRUIDA, sin publicar:** sc-memoria-cliente **1.8.0**, rama
-  `perf/pokemon-bajo-demanda` (worktree `E:/PROYECTOS-MC/sc-memoria-cliente-pokemon`, sobre la 1.7.0). Pendiente: la
-  revisión final de Codex del diff (lanzada 12-11, carpeta `E:/tmp/fase3/codex-diff/`) hasta «Sin hallazgos», y el OK de
-  Felix para meterla en un pack. Relevo: `E:/tmp/relevos/2026-11-12-fase3-cierre-codex.md`.
+- **12-11 · Fase 3 (Pokémon bajo demanda) LISTA, sin publicar:** sc-memoria-cliente **1.8.0**, rama
+  `perf/pokemon-bajo-demanda` (worktree `E:/PROYECTOS-MC/sc-memoria-cliente-pokemon`, sobre la 1.7.0, último commit
+  `7854bd2`). Codex «Sin hallazgos» en la ronda 3 de cierre del diff. Pendiente: el OK de Felix para meterla en el
+  próximo pack Móvil (jar `build/libs/sc-memoria-cliente-1.8.0.jar` de esa rama). Sin verificar: móvil real, montar,
+  multijugador.
 - **12-11 · Arranque rápido PUBLICADO:** app **0.1.25** (code 26) en vivo y modpack **Móvil 2.4.50** / Lite
   2.4.50-lite-r2 con sc-menus-cliente **1.8.2** (1a) y sc-memoria-cliente **1.7.0** (1b). Móvil PRO 2.4.50-1.1.125-r9
   sigue con los jars de PC (1.8.1 / 1.6.0): le llegan cuando salgan en el pack de PC. Novedad: Felix dijo «No se publica
@@ -17,6 +18,18 @@
 - **El cron de `app_movil.js` está ACTIVO** (crontab de OVH-A, sin `#PAUSADO`): publicó la 0.1.24 sola el 08-11 y la
   0.1.25 el 12-11. Una etiqueta `vX.Y.Z` = publicación a todos en cuanto la CI pasa.
 - Pendiente: en 2 días leer SC-47 por `g` con las claves nuevas (`k`, `d`, `h`, `s`) y comparar con antes del 12-11.
+
+## 2026-11-12 · Fase 3 cerrada con Codex: 3 rondas del diff, 7 fallos arreglados (sesión hija)
+- Ronda 1 (5): carrera entre hilos al cargar un modelo o un grupo de animaciones; sustituto roto aceptado; modelo de la
+  recarga anterior perdido si todos los nuevos fallan (Cobblemon nunca vacía `texturedModels` y lo conserva); zip de un
+  pack retirado abierto toda la partida. Commit `f25a7c7`.
+- Ronda 2 (2, sobre esos arreglos): se cerraba también un pack vivo con un archivo corrupto (ahora solo ante «zip file
+  closed»); la cadena de «modelo anterior» crecía en cada recarga (se compacta al final de cada una). Commit `7854bd2`.
+- Ronda 3 `xhigh --cierre`: «Sin hallazgos».
+- Verificado tras cada ronda: huellas on/off idénticas con y sin el pack de casos límite (6.856 / 6.858 modelos), sin
+  errores nuevos en el log; en juego dos recargas F3+T seguidas con especies vistas y nuevas dibujándose, sin errores.
+- Ojo banco de pruebas: `lanza-movil.js` NO copia el jar; copiar `build/libs/…jar` a `movil-inst/mods/` antes de medir.
+  El agente de `movil-inst` tiene ahora la orden `recarga` (F3+T).
 
 ## 2026-11-12 · Fase 3: animaciones y modelos de Pokémon bajo demanda (sesión hija)
 - Pedido: que el móvil no lea los ~4.500 ficheros de animación y ~6.900 modelos de Cobblemon al arrancar.

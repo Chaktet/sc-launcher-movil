@@ -51,10 +51,7 @@ object ScAvisos {
         if (antes != null && ahora - antes < 60_000) return
         enviados[codigo] = ahora
         val version = runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "0"
-        val perfil = when (ScPack.profile(context)) { ScPack.PROFILE_PRO -> "movilpro"; ScPack.PROFILE_LITE -> "movillite"; else -> "movil" }
-        val q = linkedMapOf("c" to codigo, "v" to version, "p" to perfil, "r" to "normal", "a" to "android")
-        for ((k, v) in extra) if (Regex("^[a-z]$").matches(k) && k !in q && SANO.matches(v)) q[k] = v
-        val query = q.entries.joinToString("&") { (k, v) -> k + "=" + URLEncoder.encode(v, "UTF-8") }
+        val query = consulta(context, codigo, extra)
         fondo.execute {
             for (host in HOSTS) {
                 val ok = runCatching {
@@ -68,6 +65,18 @@ object ScAvisos {
             }
             Logging.LOG.log(Level.INFO, "SC: anonymous notice $codigo sent")
         }
+    }
+
+    /**
+     * The query a notice sends. Base keys c v p r a are fixed, so an extra with one of those letters is dropped (Codex
+     * 29-10 and 12-11); only one-letter keys with sane values travel. Also used for the «SC arranque:» app-log line.
+     */
+    fun consulta(context: Context, codigo: String, extra: Map<String, String> = emptyMap()): String {
+        val version = runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "0"
+        val perfil = when (ScPack.profile(context)) { ScPack.PROFILE_PRO -> "movilpro"; ScPack.PROFILE_LITE -> "movillite"; else -> "movil" }
+        val q = linkedMapOf("c" to codigo, "v" to version, "p" to perfil, "r" to "normal", "a" to "android")
+        for ((k, v) in extra) if (Regex("^[a-z]$").matches(k) && k !in q && SANO.matches(v)) q[k] = v
+        return q.entries.joinToString("&") { (k, v) -> k + "=" + URLEncoder.encode(v, "UTF-8") }
     }
 
     /** A class name is the only detail of an exception that travels (its message may carry paths). */

@@ -950,6 +950,8 @@ public class GameMenu implements MenuCallback, FCLBridgeCallback {
 
     @Override
     public void onLog(String log) {
+        // SC: start phases (ScArranque, docs/PLAN-ARRANQUE-RAPIDO.md phase 0) from the same lines
+        com.tungsten.fcl.sc.ScArranque.linea(log);
         if (fclBridge != null) {
             if (log.contains("version string:") || log.contains("OR:") || log.contains("ERROR:") || log.contains("INTERNAL ERROR:")) {
                 return;

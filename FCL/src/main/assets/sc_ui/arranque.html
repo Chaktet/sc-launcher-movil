@@ -4,7 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- SC: «Minecraft is starting» screen (ScArranque). Codex design approved by Felix 28-10; sizes in CSS px of an 870x400
-     canvas scaled uniformly to the screen (ficha-arranque.md). Nothing here is clickable. -->
+     canvas scaled uniformly to the screen (ficha-arranque.md). Nothing here is clickable. Since 0.1.25 (phase 2a of
+     docs/PLAN-ARRANQUE-RAPIDO.md) ScArranque calls window.scArranque() with the real start phases read from the game's
+     output: the support line shows the stage, the bar the progress and #lento the time left from this phone's
+     previous start of the same profile and pack (no countdown without one, or once it is passed). -->
 <style>
 @font-face { font-family: 'Silkscreen'; src: url('fonts/Silkscreen-Regular.woff2') format('woff2'); font-weight: 400; }
 @font-face { font-family: 'Source Sans 3'; src: url('fonts/SourceSans3.woff2') format('woff2'); font-weight: 200 900; }
@@ -49,6 +52,9 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--rojo
 @media (prefers-reduced-motion: reduce) { #lente::before { animation: none; transform: scale(1); opacity: .7; } }
 #reloj { left: 144px; top: 244px; width: 100px; height: 30px; font-weight: 700; font-size: 22px; line-height: 30px;
   font-variant-numeric: tabular-nums; }
+#barra { left: 244px; top: 252px; width: 194px; height: 18px; background: var(--tinta); }
+#barraFondo { left: 247px; top: 255px; width: 188px; height: 12px; background: var(--papel); }
+#barraLlena { left: 247px; top: 255px; width: 0; height: 12px; background: var(--rojo); transition: width 250ms linear; }
 #consejoMarco { left: 76px; top: 320px; width: 758px; height: 36px; background: var(--tinta); }
 #consejoCrema { left: 78px; top: 322px; width: 754px; height: 32px; background: var(--crema); }
 #consejo { left: 90px; top: 326px; width: 730px; height: 24px; font-weight: 600; font-size: 15px; line-height: 24px;
@@ -72,6 +78,9 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--rojo
   <div id="lento" class="abs">Va más lento de lo normal; no cierres la app</div>
   <div id="lente" class="abs"></div>
   <div id="reloj" class="abs">0 s</div>
+  <div id="barra" class="abs"></div>
+  <div id="barraFondo" class="abs"></div>
+  <div id="barraLlena" class="abs"></div>
   <div id="consejoMarco" class="abs esq"></div>
   <div id="consejoCrema" class="abs esq"></div>
   <div id="consejo" class="abs"></div>
@@ -97,11 +106,55 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--rojo
   var m = /[?&]desde=(\d+)/.exec(location.search);
   var inicio = Date.now() - (m ? Math.max(0, parseInt(m[1], 10)) : 0);
   var reloj = document.getElementById('reloj'), lento = document.getElementById('lento');
+  var apoyo = document.getElementById('apoyo'), llena = document.getElementById('barraLlena');
+  // what ScArranque knows: ms since the game activity opened per phase (l mods found, s screens checked, k resource
+  // reload, d first frame), the mod count, first start, and hist = the same phases of this phone's previous start
+  var estado = null;
+  window.scArranque = function (o) { estado = o; inicio = Date.now() - o.ahora; tic(); };
+  function texto(M) {
+    if (!M.l) return 'Arrancando Java…';
+    if (!M.s) return (estado.primera ? 'Primera vez: preparando ' : 'Cargando ') + (estado.mods || 'los') + ' mods…';
+    if (!M.k) return 'Preparando el juego…';
+    return 'Cargando Pokémon y texturas…';
+  }
+  function duracion(ms) {
+    var s = Math.max(5, Math.ceil(ms / 5000) * 5);
+    return s < 90 ? s + ' s' : Math.round(s / 60) + ' min';
+  }
+  // without a previous start: fixed share per stage, creeping slowly inside each one (never reaches the next)
+  var FIJO = { l: 0.2, s: 0.4, k: 0.7 };
+  function progreso(t) {
+    var M = estado.marcas || {}, H = estado.hist, base = 0, desde = 0, sig = null;
+    if (H && H.d > 0) {
+      var orden = ['l', 's', 'k'].filter(function (k) { return H[k] > 0; }).sort(function (a, b) { return H[a] - H[b]; });
+      var hBase = 0, hSig = H.d;
+      for (var i = 0; i < orden.length; i++) {
+        if (M[orden[i]] != null) { hBase = H[orden[i]]; desde = M[orden[i]]; hSig = i + 1 < orden.length ? H[orden[i + 1]] : H.d; }
+      }
+      var dentro = Math.min(0.95 * (hSig - hBase), Math.max(0, t - desde));
+      var quedan = (hSig - hBase - dentro) + (H.d - hSig);
+      // passed the previous start by half: no promise, only the stage
+      if (t > H.d * 1.5) return { frac: 0.95, quedan: -1, tarde: true };
+      return { frac: Math.min(0.97, (hBase + dentro) / H.d), quedan: Math.max(0, quedan) };
+    }
+    ['l', 's', 'k'].forEach(function (k) { if (M[k] != null) { base = FIJO[k]; desde = M[k]; } });
+    var siguiente = base >= 0.7 ? 0.95 : base >= 0.4 ? 0.7 : base >= 0.2 ? 0.4 : 0.2;
+    return { frac: base + (siguiente - base) * (1 - Math.exp(-Math.max(0, t - desde) / 60000)), quedan: -1 };
+  }
   var consejo = document.getElementById('consejo'), indice = -1;
   function tic() {
     var seg = Math.floor((Date.now() - inicio) / 1000);
     reloj.textContent = seg + ' s';
-    if (seg >= 60) lento.classList.add('si');
+    if (estado) {
+      var p = progreso(Date.now() - inicio);
+      apoyo.textContent = texto(estado.marcas || {});
+      llena.style.width = Math.round(188 * p.frac) + 'px';
+      if (p.quedan >= 0) lento.textContent = p.quedan < 3000 ? 'Ya casi está' : 'Quedan unos ' + duracion(p.quedan);
+      else if (p.tarde) lento.textContent = 'Va más lento que la última vez; no cierres la app';
+      else if (estado.primera) lento.textContent = 'La primera vez tarda más; no cierres la app';
+      else lento.textContent = 'Va más lento de lo normal; no cierres la app';
+      lento.classList.toggle('si', p.quedan >= 0 || p.tarde || estado.primera || seg >= 60);
+    } else if (seg >= 60) lento.classList.add('si');
     var toca = Math.floor(seg / 8) % CONSEJOS.length;
     if (toca !== indice) {
       if (indice < 0) { consejo.textContent = CONSEJOS[toca]; }

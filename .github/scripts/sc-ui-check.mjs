@@ -320,6 +320,16 @@ const leeLog = () => adb('sh', '-c', `"tail -c 200000 '${run}/logs/latest.log' 2
 await sleep(60000)
 let caida = logcat().match(/Incompatible mods found|Mod discovery failed|Error analyzing \[[^\]]*\]|OpenJDK exited with code : \d+/g)
 comprueba(!caida, `the game is still running 60 s after JUGAR (Fabric found the mods)${caida ? ': ' + [...new Set(caida)].join(' · ') : ''}`)
+// Phase 0 of docs/PLAN-ARRANQUE-RAPIDO.md (0.1.25): every start phase writes the SC-47 query it would send to fcl.log.
+// The emulator does not reach the first frame, so d/h are x here; l (mods found), s (screens check) and n/f must be set.
+{
+  const lineas = adb('sh', '-c', `"grep -h 'SC arranque:' /sdcard/SCLauncher/log/fcl.log* 2>/dev/null || true"`)
+  writeFileSync('evidence/arranque-sc47.txt', lineas + '\n')
+  const ultima = (lineas.trim().split('\n').filter((l) => l.includes('c=SC-47')).pop() || '').replace(/.*SC arranque: /, '')
+  const tiene = (k, re) => new RegExp('[?&]' + k + '=' + re + '(&|$)').test('?' + ultima.replace(/^[a-z]+ /, ''))
+  comprueba(tiene('c', 'SC-47') && tiene('l', '\\d+') && tiene('s', '\\d+') && tiene('k', '(\\d+|x)') && tiene('d', 'x') && tiene('n', '\\d')
+    && tiene('f', '[01]') && tiene('t', '\\d+') && tiene('g', '[a-z]+'), `SC-47 carries the start phases (${ultima.slice(0, 220) || 'no «SC arranque:» line in fcl.log'})`)
+}
 // Loading on a phone-sized screen: a screenshot every minute shows when the title screen is ready and how it looks
 const tiempos = []
 const minutos = COMPLETA ? 20 : 0

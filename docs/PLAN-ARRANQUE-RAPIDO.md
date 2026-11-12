@@ -1,8 +1,29 @@
-# Plan · faster game start on phones (analysis 2026-11-12, not built)
+# Plan · faster game start on phones (analysis 2026-11-12; phases 0, 1a, 1b, 2a built 12-11)
 
 Felix: «optimizar el arranque del launcher móvil, que no tarde tantísimo las primeras veces, sobre todo en móviles
-medio antiguos o con menos GB de RAM». This file is the analysis and the architecture; nothing here is built yet.
-Before building: one Codex review of this complete plan (global CLAUDE.md, «Claude + Codex»).
+medio antiguos o con menos GB de RAM». Codex reviewed the complete plan on 12-11 (10 findings, all folded in below).
+
+## Status (12-11)
+- **0 + 2a** built in the app, version 0.1.25 (not published: the app publisher is still paused).
+- **1a** built: `sc-menus-cliente` branch `perf/pantallas-rapido` (worktree `E:/PROYECTOS-MC/sc-menus-cliente-rapido`,
+  one commit on 1.8.1, `Syncer.java` is identical on every branch so it merges anywhere). SyncerTest 26/26; the log
+  line on a second sync reads `screens vN up to date (quick check: 65 sampled, …, checked in 0.0 s)`. The app drops the
+  stamp on «Reparar archivos» and on every pack install. Reaches phones only when a modpack ships that mod build.
+- **1b** built (premise corrected): Cobblemon 1.8.3 `Cobblemon.initialize()` calls `ShowdownThread.launch()`, which
+  BLOCKS the main thread until Showdown is up (6 s on the emulator). After that, a client on a server never uses the
+  service (species arrive by packet via `PokemonSpecies.reload(Map)`; Moves/Abilities/HeldItems/BagItems call
+  `getService()` only in their `SERVER_DATA` reload). So instead of «no Showdown until single-player», launch() only
+  starts the thread and `getService()`/`queue()` wait on their own thread. `sc-memoria-cliente` 1.7.0, branch
+  `perf/showdown-sin-esperar` (worktree `E:/PROYECTOS-MC/sc-memoria-cliente-showdown`), switch
+  `showdown_sin_esperar`. Built, NOT yet run in a client (Claude's test client was busy): before it ships, a start on
+  the title screen, a multiplayer battle and a single-player world open/close/reopen.
+- **1c dropped (12-11), reason from Loader 0.19.3's code:** production does no runtime mod remap (`processedMods` stays
+  empty); the only first-start work is remapping the Minecraft jar into
+  `.fabric/remappedJars/minecraft-1.21.1-0.19.3/client-intermediary.jar` (`GameProviderHelper`), reused when the file
+  merely EXISTS (no hash). Shipping it is possible (relative path, keyed by MC + Loader version) but: on the emulator
+  the whole step took ≤ 1 s («preparing JARs» and «Loading 124 mods» in the same second), it adds the jar to every pack
+  download, and a damaged shipped copy would never be rebuilt. Reopen only if SC-47 shows `f`=1 starts with an `l`
+  much larger than `f`=0 starts.
 
 ## What is known (measured or read in code)
 - SC-47 (historial 08-11, 19 players): `u` = 0 min, `t` = 2-13 min, 12 of 19 on high-end phones. `u` is the launcher's

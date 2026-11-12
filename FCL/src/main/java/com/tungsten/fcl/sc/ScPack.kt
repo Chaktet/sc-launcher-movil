@@ -279,6 +279,7 @@ object ScPack {
                 }
             }
             verifyFiles(mrpack, runDir)
+            pantallasRevisionCompleta(runDir)
             playerOptions?.let { mergeOptions(File(runDir, "options.txt"), it) }
             guardarOpcionesDelPack(activity, mrpack)
             if (!hasInstance) ScAuto.ajustesIniciales(activity, File(runDir, "options.txt"))
@@ -286,6 +287,7 @@ object ScPack {
             File(FCLPath.CACHE_DIR).listFiles { f -> f.name.startsWith("sc-pack-") }?.forEach { if (it != mrpack) it.delete() }
         } else if (forceRepair) {
             verifyFiles(download(manifest), repo.getRunDirectory(INSTANCE))
+            pantallasRevisionCompleta(repo.getRunDirectory(INSTANCE))
         }
         antesDeJugar(activity, repo, manifest)
     }
@@ -647,6 +649,15 @@ object ScPack {
             if (!tmp.renameTo(dest)) throw ScError("No se pudo guardar", "No se pudo guardar ${dest.name}.")
         }
         verifyOverrides(mrpack, root)
+    }
+
+    /**
+     * sc-menus-cliente (movil.2+) skips its 10,000-file screens check while its stamp says the last full pass was clean
+     * for the same manifest (docs/PLAN-ARRANQUE-RAPIDO.md, 1a). «Reparar archivos» and every pack install or update
+     * remove the stamp, so the next game start checks every screen file again.
+     */
+    private fun pantallasRevisionCompleta(runDir: File) {
+        runCatching { File(runDir, "config/sc-menus-cliente/rapido.txt").delete() }
     }
 
     /**

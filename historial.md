@@ -13,10 +13,17 @@
 - **PC (Felix «También en PC», 12-11):** sc-memoria-cliente **1.7.0** publicada en PRO/LITE/SUPER LITE del launcher
   (manifiesto 89e06608, copia `launcher/_backup-arranque-rapido-20261112-170152/`, Cloudflare OK; copia local sincronizada).
   sc-menus-cliente NO: otra sesión publicó la **1.9.0** (cartel de reinicio) en PC justo antes; la 1.8.2 la habría
-  quitado. El 1a llega a PC (y a Móvil PRO, que coge los mods de PC) cuando `6368466` se fusione en la rama de la 1.9.x.
-  Móvil/Lite siguen con 1.8.2 (sin cartel) hasta que haya una 1.9.x con el 1a.
+  quitado. Otra sesión metió también la 1.9.0 en Móvil 2.4.51 (17:01Z), encima de la 1.8.2: **el 1a no está hoy en
+  ningún pack**; vuelve cuando `6368466` se fusione en la rama de la 1.9.x y salga una versión nueva.
+- **12-11 · Mano invisible en 1ª persona (Felix: en el móvil, en PC arreglado): Móvil 2.4.52 / Lite sin TooManyPlayers.**
+  El único mod del móvil que no está en PC era TooManyPlayers, quitado de PC el 11-11 (sc-launcher historial). PRO ya no
+  lo llevaba. `QUITAR_MOVIL` += `/^TooManyPlayers-/i` (`auto_descargas.js` md5 146e6b99, copia en OVH-A
+  `auto_descargas.js.bak-toomany-20261112`), `--rehacer-movil` → 2.4.52. Cloudflare: los 3 manifiestos con tamaño y
+  sha256 OK y 0 rastros del mod. Emulador (run 43266549235) con el 2.4.52: instala y el juego sigue a los 60 s. **Sin ver en un móvil real** que la mano vuelva (el emulador no llega a dibujar el juego).
 - **El cron de `app_movil.js` está ACTIVO** (crontab de OVH-A, sin `#PAUSADO`): publicó la 0.1.24 sola el 08-11 y la
   0.1.25 el 12-11. Una etiqueta `vX.Y.Z` = publicación a todos en cuanto la CI pasa.
+- Por SSH en dos saltos (Hetzner → OVH-A), las comillas anidadas se rompen sin avisar: copiar un script y ejecutarlo
+  con `bash` allí (12-11: dos publicaciones paradas por eso).
 - Pendiente: en 2 días leer SC-47 por `g` con las claves nuevas (`k`, `d`, `h`, `s`) y comparar con antes del 12-11.
 
 ## 2026-11-12 · Fase 3 cerrada con Codex: 3 rondas del diff, 7 fallos arreglados (sesión hija)

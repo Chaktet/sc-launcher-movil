@@ -16,6 +16,13 @@
   .mrpack llegan al cambiar de perfil y el mapa pasa a N. Emulador completo 49 OK; los 3 APK por Cloudflare OK. Sin móvil real.
 - **12-11 · Arranque en PC: sc-memoria-cliente 1.9.0 CONSTRUIDA, nada publicado** (Felix OK a pasos 2 y 3; rama
 - **12-11 · Arranque en PC: sc-memoria-cliente 1.9.0 CONSTRUIDA Y MEDIDA (−19 s), nada publicado** (Felix OK a pasos 2 y 3; rama
+- **12-11 · sc-memoria-cliente 1.9.0 PUBLICADA en PC (PRO/LITE/SUPER LITE)** (Felix «Sí, publícala»): manifiesto
+  `6bff8afd` (antes a537175e, copia `launcher/_backup-arranque-pc-20261112-211013/`), sustituye a la 1.7.0, mismo jar
+  medido (md5 9e35cc94). Cloudflare: manifiesto sin caché = 6bff8afd; los 3 módulos con tamaño 95695 y md5 OK.
+  Cron 21:13Z sin ERROR: .mrpack 1.1.130 (APTO ×3), SC-Mods 1.1.46 / LITE 1.1.46 / Menús 1.0.45 y **Móvil PRO
+  2.4.55-1.1.130-r9**; descargados por Cloudflare, los 4 llevan un solo sc-memoria, la 1.9.0. Móvil PRO pasa así de 1.7.0
+  a 1.9.0 (lectura adelantada con max(1, núcleos/4) hilos: sin probar en un móvil real). Novedad: sin publicar.
+- **12-11 · Arranque en PC: sc-memoria-cliente 1.9.0 CONSTRUIDA Y MEDIDA (−19 s)** (Felix OK a pasos 2 y 3; rama
   `perf/fancymenu-lectura-adelantada` 27f0e93, worktree `E:/PROYECTOS-MC/sc-memoria-cliente-fancy`, plan en su
   `docs/PLAN-ARRANQUE-PC.md`). 1.9.0 = 1.8.0 (Pokémon bajo demanda) + lectura adelantada de los 5.763 layouts de
   FancyMenu (111 MB) en 4 hilos desde el entrypoint `client`; cada fichero se usa solo si sus bytes no cambiaron

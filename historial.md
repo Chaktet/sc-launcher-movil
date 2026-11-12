@@ -1,6 +1,10 @@
 # Historial · SC Launcher Móvil
 
 ## Estado actual
+- **12-11 · Fase 3 (Pokémon bajo demanda) CONSTRUIDA, sin publicar:** sc-memoria-cliente **1.8.0**, rama
+  `perf/pokemon-bajo-demanda` (worktree `E:/PROYECTOS-MC/sc-memoria-cliente-pokemon`, sobre la 1.7.0). Pendiente: la
+  revisión final de Codex del diff (lanzada 12-11, carpeta `E:/tmp/fase3/codex-diff/`) hasta «Sin hallazgos», y el OK de
+  Felix para meterla en un pack. Relevo: `E:/tmp/relevos/2026-11-12-fase3-cierre-codex.md`.
 - **12-11 · Arranque rápido PUBLICADO:** app **0.1.25** (code 26) en vivo y modpack **Móvil 2.4.50** / Lite
   2.4.50-lite-r2 con sc-menus-cliente **1.8.2** (1a) y sc-memoria-cliente **1.7.0** (1b). Móvil PRO 2.4.50-1.1.125-r9
   sigue con los jars de PC (1.8.1 / 1.6.0): le llegan cuando salgan en el pack de PC. Novedad: Felix dijo «No se publica
@@ -13,6 +17,21 @@
 - **El cron de `app_movil.js` está ACTIVO** (crontab de OVH-A, sin `#PAUSADO`): publicó la 0.1.24 sola el 08-11 y la
   0.1.25 el 12-11. Una etiqueta `vX.Y.Z` = publicación a todos en cuanto la CI pasa.
 - Pendiente: en 2 días leer SC-47 por `g` con las claves nuevas (`k`, `d`, `h`, `s`) y comparar con antes del 12-11.
+
+## 2026-11-12 · Fase 3: animaciones y modelos de Pokémon bajo demanda (sesión hija)
+- Pedido: que el móvil no lea los ~4.500 ficheros de animación y ~6.900 modelos de Cobblemon al arrancar.
+- Medido (PC, instancia con los mods y packs exactos del Móvil 2.4.49, `E:/tmp/fase3/`): con la 1.3.0 la recarga eran
+  62 s, 39 de FancyMenu y 8 de fuentes (ya arreglados en 1.4.0/1.6.0); con la 1.7.0 Cobblemon es 14 de 23 s, el 82 %
+  animaciones, y sube el heap de 1,05 a 2,78 GB.
+- Hecho: sc-memoria-cliente 1.8.0 (plan `docs/PLAN-FASE3-POKEMON-BAJO-DEMANDA.md` en esa rama): al cargar solo lista los
+  ficheros; cada grupo de animación y cada modelo se lee la primera vez que se usa. Interruptor `pokemon_bajo_demanda`.
+  Codex revisó el plan (8 hallazgos, todos atendidos: zip cerrado por otra recarga se reabre, mismo nombre en dos
+  carpetas gana como en Cobblemon, fallo recordado sin trazas por fotograma, sustituto horneado al cargar).
+- Verificado: huella (hash de cada vértice de 6.856 modelos + volcado completo de cada animación) IDÉNTICA encendido y
+  apagado, con y sin un pack de casos límite. Tiempos: Cobblemon 13-18 s → 0,7-0,9 s (todos los núcleos), 29-40 s →
+  2,4-3,1 s (4 núcleos); hasta el menú 80-119 s → 42-56 s (4 núcleos); heap máx. tras GC 2,7-2,8 GB → 1,1 GB. En juego
+  (mundo individual): se ven y animan, también tras cambiar de pack en caliente y tras /reload; `false` = carga completa.
+- NO verificado: móvil real (tirones al ver muchas especies nuevas de golpe), montar un Pokémon, multijugador.
 
 ## 2026-11-12 · Publicado: app 0.1.25 + Móvil 2.4.50 (Felix: «Publicar 0.1.25», «Pack móvil nuevo ya»)
 - App: etiqueta `v0.1.25` en 794306a5 → run 43255220455 verde (compilaciones + emulador + release) → `app_movil.js`

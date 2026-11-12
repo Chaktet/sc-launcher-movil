@@ -19,6 +19,10 @@ on:
         type: choice
         options: [rapida, completa]
         default: rapida
+      pack_prueba:
+        description: "Optional: URL of a not yet published mobile sc-pack.json the emulator installs instead of the live one"
+        type: string
+        default: ""
   schedule:
     - cron: "0 9 * * 0"
 
@@ -34,6 +38,7 @@ env:
   # sha256 of our release certificate (E:\SECRETOS\sc-launcher-movil\sc-release.jks, alias sc-launcher)
   SC_CERT_SHA256: ed158ccbfb4c2adce848f81ba87f213b29bb4eef85ce3364e6627c797bdc3448
   SC_PRUEBA: ${{ github.event_name == 'schedule' && 'completa' || inputs.prueba || 'rapida' }}
+  SC_PACK_PRUEBA: ${{ inputs.pack_prueba || '' }}
 
 jobs:
   build:

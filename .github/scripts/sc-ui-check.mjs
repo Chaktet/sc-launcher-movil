@@ -162,7 +162,14 @@ const esperaPack = async (version, minutos, nombre) => {
 await ev(`SC.debug('debug_no_launch', '1')`)
 await ev(`document.querySelector('[data-p=jugar]').click()`)
 await sleep(500)
-const real = await (await fetch('https://descargas.servidorcobblemon.es/movil/sc-pack.json')).json()
+// SC_PACK_PRUEBA (workflow input pack_prueba): a not yet published mobile modpack manifest, installed instead of the
+// live one so a new pack is tried here before players get it (12-11: sc-menus-cliente 1.8.2 + sc-memoria-cliente 1.7.0)
+const PACK_PRUEBA = process.env.SC_PACK_PRUEBA || ''
+const real = await (await fetch(PACK_PRUEBA || 'https://descargas.servidorcobblemon.es/movil/sc-pack.json')).json()
+if (PACK_PRUEBA) {
+  informe.push(`INFO test modpack ${PACK_PRUEBA} (${real.version})`)
+  await ev(`SC.debug('debug_manifest_url', ${JSON.stringify(PACK_PRUEBA)})`)
+}
 await ev(`document.getElementById('btnJugar').click()`)
 const t0 = Date.now()
 comprueba(await esperaPack(real.version, 15, 'ui-5-instalando'), `JUGAR installs the server modpack ${real.version} (${Math.round((Date.now() - t0) / 1000)} s)`)
@@ -199,7 +206,7 @@ const t2 = Date.now()
 comprueba(await esperaPack(ci2.version, 15, 'ui-7b-actualizando'), `a second update is applied (${Math.round((Date.now() - t2) / 1000)} s)`)
 pasosLentos('update with an unchanged pack, steps')
 comprueba(!adb('sh', '-c', `"ls '${run}/../../backup' 2>/dev/null || true"`).includes('SC Cobblemon-'), 'updates leave no copy of the instance in .minecraft/backup')
-await ev(`SC.debug('debug_manifest_url', '')`)
+await ev(`SC.debug('debug_manifest_url', ${JSON.stringify(PACK_PRUEBA)})`)
 
 // repair: a broken mod is detected by its hash and downloaded again
 const victima = mods.find((m) => m.startsWith('Cobblemon-fabric-'))
@@ -329,6 +336,23 @@ comprueba(!caida, `the game is still running 60 s after JUGAR (Fabric found the 
   const tiene = (k, re) => new RegExp('[?&]' + k + '=' + re + '(&|$)').test('?' + ultima.replace(/^[a-z]+ /, ''))
   comprueba(tiene('c', 'SC-47') && tiene('l', '\\d+') && tiene('s', '\\d+') && tiene('k', '(\\d+|x)') && tiene('d', 'x') && tiene('n', '\\d')
     && tiene('f', '[01]') && tiene('t', '\\d+') && tiene('g', '[a-z]+'), `SC-47 carries the start phases (${ultima.slice(0, 220) || 'no «SC arranque:» line in fcl.log'})`)
+}
+// With a test modpack: its client mods did their start-up work (sc-memoria-cliente 1.7.0 starts Showdown off the main
+// thread; sc-menus-cliente 1.8.2 ends a clean screens pass and leaves the quick-check stamp for the next start)
+if (PACK_PRUEBA && !caida) {
+  let l = ''
+  for (let s = 0; s < 300; s += 15) {
+    l = adb('sh', '-c', `"grep -E 'SC Memoria. Showdown|SC Menus. ' '${run}/logs/latest.log' 2>/dev/null || true"`)
+    if (/SC Memoria\] Showdown\w* (active|off)/.test(l) && /SC Menus\] /.test(l)) break
+    await sleep(15000)
+  }
+  writeFileSync('evidence/mods-prueba.txt', l + '\n')
+  const sd = (l.match(/.*SC Memoria\] Showdown.*/) || ['no line'])[0]
+  comprueba(/SC Memoria\] Showdown\w* active/.test(sd), `sc-memoria-cliente starts Showdown off the main thread (${sd.slice(-160)})`)
+  const menus = (l.match(/.*SC Menus\] .*/g) || []).pop() || 'no line'
+  comprueba(/screens v\S+ up to date/.test(menus), `sc-menus-cliente synced the screens (${menus.slice(-200)})`)
+  const sello = adb('sh', '-c', `"cat '${run}/config/sc-menus-cliente/rapido.txt' 2>/dev/null || true"`)
+  comprueba(sello.length > 0, `the clean pass left the quick-check stamp for the next start (rapido.txt: ${sello.slice(0, 80) || 'missing'})`)
 }
 // Loading on a phone-sized screen: a screenshot every minute shows when the title screen is ready and how it looks
 const tiempos = []

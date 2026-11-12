@@ -80,8 +80,8 @@ android {
         targetSdk = libs.versions.targetSdk.get().toInt()
         // SC: our own version line (FCL base: 1.3.4.2). Bump both on every published APK; the app updater compares versionCode.
         // -PscVersionCode / -PscVersionName only for CI's test update APK (a "newer" copy of the debug build)
-        versionCode = (project.findProperty("scVersionCode") as String?)?.toInt() ?: 26
-        versionName = (project.findProperty("scVersionName") as String?) ?: "0.1.25"
+        versionCode = (project.findProperty("scVersionCode") as String?)?.toInt() ?: 27
+        versionName = (project.findProperty("scVersionName") as String?) ?: "0.1.26"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {

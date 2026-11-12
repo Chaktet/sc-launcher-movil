@@ -1,5 +1,15 @@
 # Historial · SC Launcher Móvil
 
+## 2026-11-12 · App 0.1.26: el botón «Pokémon» del Móvil PRO abría el mapa de Xaero (Felix: «Cuando pase la prueba, publica la app 0.1.26»)
+- Causa: el botón táctil «Pokémon» manda M; en PRO el mapa mundial de Xaero, sin línea en `options.txt`, viene en M y gana a
+  Cobblemon. El PRO trae `key_gui.xaero_open_map:key.keyboard.n`, pero al pasar de Móvil a PRO FCL no pisa el `options.txt`
+  que el juego ya reescribió y `ScPack.mergeOptions` leía el del disco: las teclas de los mods nuevos no llegaban nunca.
+- Arreglo (84429c59, rama `fix/tecla-mapa-pro`): la mezcla lee las líneas del .mrpack; antes de cada partida `teclaDelMapa`
+  pasa el mapa a N si no tiene tecla o comparte la de «Pokémon» (otra tecla elegida por el jugador se respeta).
+- Comprobado: cliente de PC con los mods del PRO y el `options.txt` del Móvil 2.4.55: sin arreglo M abre el mapa; con él M abre
+  Cobblemon y N el mapa. Prueba completa del emulador (run 43287974931): 49 OK, 0 FAIL, con los 3 casos nuevos de la tecla.
+- Sin ver en un móvil real.
+
 ## Estado actual
 - **12-11 · Fase 3 (Pokémon bajo demanda) LISTA, sin publicar:** sc-memoria-cliente **1.8.0**, rama
   `perf/pokemon-bajo-demanda` (worktree `E:/PROYECTOS-MC/sc-memoria-cliente-pokemon`, sobre la 1.7.0, último commit

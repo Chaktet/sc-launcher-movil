@@ -14,11 +14,10 @@
 ## Estado actual
 - **12-11 · App 0.1.26 PUBLICADA** (code 27, 20:42Z): en Móvil PRO el botón «Pokémon» (M) abría el mapa de Xaero; ahora las teclas del
   .mrpack llegan al cambiar de perfil y el mapa pasa a N. Emulador completo 49 OK; los 3 APK por Cloudflare OK. Sin móvil real.
-- **12-11 · Fase 3 (Pokémon bajo demanda) LISTA, sin publicar:** sc-memoria-cliente **1.8.0**, rama
-  `perf/pokemon-bajo-demanda` (worktree `E:/PROYECTOS-MC/sc-memoria-cliente-pokemon`, sobre la 1.7.0, último commit
-  `7854bd2`). Codex «Sin hallazgos» en la ronda 3 de cierre del diff. **Felix (12-11): «Al próximo pack Móvil»**: el
-  próximo `--rehacer-movil` lleva este jar (`build/libs/sc-memoria-cliente-1.8.0.jar` de esa rama, o rehacerlo allí;
-  sustituye a la 1.7.0, un solo jar). Sin probar antes en móvil real. Sin verificar: móvil real, montar, multijugador.
+- **12-11 · Fase 3 PUBLICADA: Móvil 2.4.55 / Lite 2.4.55-lite-r2 con sc-memoria-cliente 1.8.0** (Pokémon bajo
+  demanda; sustituye a la 1.7.0, un solo jar; rama `perf/pokemon-bajo-demanda` 7854bd2). Llevan además sc-menus 1.9.0 y
+  sc-avisos 1.7.0 (de la 2.4.53/2.4.54 de otras sesiones). PRO 2.4.55-1.1.129-r9 sigue con la 1.7.0 de PC. Sin verificar:
+  móvil real (tirones con muchas especies nuevas), montar un Pokémon, multijugador. Novedad: solo vista previa.
 - **12-11 · Arranque rápido PUBLICADO:** app **0.1.25** (code 26) en vivo y modpack **Móvil 2.4.50** / Lite
   2.4.50-lite-r2 con sc-menus-cliente **1.8.2** (1a) y sc-memoria-cliente **1.7.0** (1b). Móvil PRO 2.4.50-1.1.125-r9
   sigue con los jars de PC (1.8.1 / 1.6.0): le llegan cuando salgan en el pack de PC. Novedad: Felix dijo «No se publica
@@ -40,6 +39,17 @@
 - Por SSH en dos saltos (Hetzner → OVH-A), las comillas anidadas se rompen sin avisar: copiar un script y ejecutarlo
   con `bash` allí (12-11: dos publicaciones paradas por eso).
 - Pendiente: en 2 días leer SC-47 por `g` con las claves nuevas (`k`, `d`, `h`, `s`) y comparar con antes del 12-11.
+
+## 2026-11-12 · Publicado Móvil 2.4.55 con sc-memoria-cliente 1.8.0 (Felix: «Al próximo pack Móvil», «pack nuevo ya»)
+- Jar: `sc-memoria-cliente-pokemon/build/libs/sc-memoria-cliente-1.8.0.jar` (Gradle al día con 7854bd2, sha256
+  8edc2434…), copiado a `descargas-auto/mods-movil/`.
+- Emulador antes de publicar (run 43274583508, `pack_prueba` = 2.4.53 en vivo con solo el jar cambiado, carpeta temporal
+  `movil/prueba-ci-memoria/`, ya borrada): instala, «BedrockAnimationRepositoryMixin active (… pokemon_bajo_demanda=true)»,
+  Showdown en segundo plano, sin crash. Único FAIL: `rapido.txt` de sc-menus (esperado: la 1.9.0 no lleva el 1a). La
+  línea «Cobblemon assets loaded» no llegó a salir (el emulador no termina la carga).
+- `auto_descargas.js --rehacer-movil --mod-movil mods-movil/sc-memoria-cliente-1.8.0.jar` (ensayo `--prueba` antes) →
+  2.4.55 (otra sesión había publicado la 2.4.54 con sc-avisos 1.7.0 entre medias; la 2.4.55 va encima y la conserva).
+- Cloudflare: Móvil, Lite y PRO con tamaño y sha256 = manifiesto; Móvil y Lite llevan 1.8.0 y ninguna 1.7.0.
 
 ## 2026-11-12 · Fase 3 cerrada con Codex: 3 rondas del diff, 7 fallos arreglados (sesión hija)
 - Ronda 1 (5): carrera entre hilos al cargar un modelo o un grupo de animaciones; sustituto roto aceptado; modelo de la

@@ -1,9 +1,23 @@
 # Historial · SC Launcher Móvil
 
 ## Estado actual
-- **12-11 · Plan «arranque rápido» escrito, SIN construir:** `docs/PLAN-ARRANQUE-RAPIDO.md`. SC-47 dice `u`=0 y `t`=2-13 min:
-  la espera está dentro del arranque de Minecraft, no en el launcher. No hay ningún log de arranque de un móvil real:
-  la fase 0 (medir por tramos en SC-47) va primero. Pendiente: revisión de Codex del plan y construirlo (Opus 5.5).
+- **12-11 · Arranque rápido: fases 0, 2a, 1a y 1b construidas, 1c descartada** (`docs/PLAN-ARRANQUE-RAPIDO.md`, «Status»).
+  App **0.1.25** (code 26) SIN publicar (el cron sigue pausado). 1a = rama `perf/pantallas-rapido` de sc-menus-cliente,
+  1b = sc-memoria-cliente 1.7.0 en la rama `perf/showdown-sin-esperar`: ninguna está en un modpack. Pendiente: probar la
+  1b en un cliente (pantalla de título, combate multijugador, mundo individual) antes de meterla en un pack; fusionar
+  ambas ramas en las líneas que se publican; publicar 0.1.25; en 2 días leer SC-47 por `g` con las claves nuevas.
+
+## 2026-11-12 · Arranque rápido del móvil, fases 0 + 2a + 1a + 1b (sesión hija, Felix: «que no tarde tantísimo»)
+- Codex revisó el plan (10 hallazgos, todos aplicados). El más serio: `a`/`r`/`p` chocaban con claves fijas de ScAvisos.
+- App 0.1.25 (70163a8f + 2c213f66): `ScArranque` lee la salida del juego (`GameMenu.onLog`, líneas completas, reloj
+  monotónico) → SC-47 con `l s k d h e n f`, línea «SC arranque:» en fcl.log en cada arranque; pantalla de arranque con
+  etapa, barra y «Quedan unos …» aprendido del arranque anterior. Codex de fondo: 3 fallos arreglados.
+- 1a `6368466`: sello `rapido.txt`, 65 archivos en vez de 6.888-10.366 (8,8 s en el emulador); SyncerTest 26/26.
+- 1b `2a5d50b`+`9b72653`: Cobblemon 1.8.3 bloquea el hilo principal en `ShowdownThread.launch()`; ahora arranca en
+  paralelo y esperan solo `getService()`/`queue()`. Compila; NO probado en un cliente. 1c descartada (≤1 s, ver plan).
+- Verificado: run 43174165045 todo OK (3 compilaciones + emulador); `arranque-sc47.txt`: `l=15 s=5 e=50 n=0 f=1`.
+- NO verificable sin móvil real ni pack nuevo: `d`/`h`/`k` (el emulador no llega al primer fotograma), la barra en
+  marcha, y la línea `[SC Menus] … quick check` en una 2ª partida (solo en el test local; el emulador usa el pack publicado).
 - **29-10 · 0.1.21 RETIRADA, publicador PAUSADO:** `movil/app/sc-app.json` vuelve a 0.1.20 (copia de la 0.1.21 en `sc-app.json.bak-0.1.21-retirada`) y la línea de `app_movil.js` del cron de OVH-A está comentada (`#PAUSADO-20261029`, copia `descargas-auto/crontab.bak-20261029`). Motivo: móviles en 0.1.20 recibían «Actualización no válida… no está firmada» y, con la actualización obligatoria, no podían jugar. La 0.1.21 SÍ está firmada con nuestra clave: algunos Android no leen el firmante de un APK solo v2/v3. Arreglo en la 0.1.22 (9f8ac543). No reactivar el cron sin decidir cómo publicar la 0.1.22.
 - Publicada la **0.1.21** (29-10, versionCode 22). Base: pantallas PokéNav, modpack automático con dos perfiles (Ajustes ›
   «Modpack Móvil / PRO»; `movil/sc-pack.json` y `movil/sc-pack-pro.json`, este último lo rehace solo

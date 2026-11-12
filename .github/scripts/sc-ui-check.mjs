@@ -295,6 +295,17 @@ const modsPro = listaMods()
 comprueba(modsPro.length > mods.length && modsPro.some((m) => m.startsWith('entity_model_features')) && !modsPro.some((m) => /^(Ixeris|iris-fabric|BorderlessFullscreen)/.test(m)),
   `PRO has its mods without the desktop-only ones (${modsPro.length} jars)`)
 comprueba(adb('cat', `'${run}/options.txt'`).includes('sc_ci_option:1'), "the player's options.txt survived the switch to PRO")
+// the keys the PRO pack sets for its own mods reach a player who comes from Móvil (Felix 12-11: Xaero's map stayed on M,
+// the key of the «Pokémon» touch button, and opened instead of the Pokémon menu)
+const teclaMapa = async () => {
+  for (let i = 0; i < 15; i++) {
+    const l = adb('sh', '-c', `"grep '^key_gui.xaero_open_map:' '${run}/options.txt' || true"`).trim()
+    if (l === 'key_gui.xaero_open_map:key.keyboard.n') return l
+    await sleep(1000)
+  }
+  return adb('sh', '-c', `"grep '^key_gui.xaero_open_map:' '${run}/options.txt' || true"`).trim()
+}
+comprueba((await teclaMapa()) === 'key_gui.xaero_open_map:key.keyboard.n', "PRO's map key (N) reached the player's options.txt")
 // PRO keeps the PC SC-Pack.zip whole (Felix 27-10, movil_pro.js), not the phone pack
 const packsPro = adb('grep', 'resourcePacks', `'${run}/options.txt'`)
 comprueba(/file\/SC-Pack\.zip/.test(packsPro) && !/file\/SC-Pack-Movil\.zip/.test(packsPro), 'PRO uses the PC resource pack (SC-Pack.zip)')
@@ -306,9 +317,13 @@ comprueba(await esperaPack(real.version, 20, 'ui-10-vuelta-movil'), `back to the
 const modsVuelta = listaMods()
 comprueba(modsVuelta.length === mods.length && !modsVuelta.some((m) => m.startsWith('entity_model_features')), `PRO's mods are gone after switching back (${modsVuelta.length} jars)`)
 comprueba(adb('cat', `'${run}/options.txt'`).includes('sc_ci_option:1'), "the player's options.txt survived the switch back")
+// a PRO player from before the fix has the map written on M: it moves to N before the game
+adb('sh', '-c', `"sed -i 's/^key_gui.xaero_open_map:.*/key_gui.xaero_open_map:key.keyboard.m/' '${run}/options.txt'"`)
+comprueba(adb('cat', `'${run}/options.txt'`).includes('key_gui.xaero_open_map:key.keyboard.m'), 'test set-up: map key written on M')
 await elige('pro')
 await ev(`document.getElementById('btnJugar').click()`)
 comprueba(await esperaPack(pro.version, 20, 'ui-10-pro-otra-vez'), 'PRO again, for the game check')
+comprueba((await teclaMapa()) === 'key_gui.xaero_open_map:key.keyboard.n', 'a map key left on M (same as «Pokémon») moves to N')
 }
 
 await ev(`SC.debug('debug_no_launch', '0')`)

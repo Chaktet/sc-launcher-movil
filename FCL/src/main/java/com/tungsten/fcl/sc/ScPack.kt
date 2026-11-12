@@ -280,7 +280,7 @@ object ScPack {
             }
             verifyFiles(mrpack, runDir)
             pantallasRevisionCompleta(runDir)
-            playerOptions?.let { mergeOptions(File(runDir, "options.txt"), it) }
+            playerOptions?.let { mergeOptions(File(runDir, "options.txt"), it, packOptions(mrpack)) }
             guardarOpcionesDelPack(activity, mrpack)
             if (!hasInstance) ScAuto.ajustesIniciales(activity, File(runDir, "options.txt"))
             activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY_VERSION, manifest.version).putString(KEY_INSTALLED_PROFILE, perfil).apply()
@@ -310,6 +310,7 @@ object ScPack {
             }
         }
         reponerPacks(activity, opciones)
+        teclaDelMapa(opciones)
         ScAuto.antesDeJugar(activity, opciones)
         selectAndConfigure(serverFor(activity))
     }
@@ -345,14 +346,49 @@ object ScPack {
         return m
     }
 
+    /** The options.txt inside the .mrpack, as [readOptions] gives a file; empty when it has none. */
+    private fun packOptions(mrpack: File): LinkedHashMap<String, String> {
+        val m = LinkedHashMap<String, String>()
+        runCatching {
+            ZipFile(mrpack).use { z ->
+                val e = OVERRIDE_DIRS.firstNotNullOfOrNull { z.getEntry(it + "options.txt") } ?: return@use
+                z.getInputStream(e).bufferedReader(StandardCharsets.UTF_8).readLines()
+                    .forEach { l -> l.substringBefore(':', "").takeIf { it.isNotEmpty() }?.let { m[it] = l } }
+            }
+        }
+        return m
+    }
+
     /**
      * A pack update ships its own options.txt; the player's settings (keys, video, sound, language…) are kept on top
      * of it. Only the resource pack lists come from the pack, so a new pack order still applies.
+     * The pack's lines are read from the .mrpack ([pack]): FCL's update leaves a file the game has rewritten as it is,
+     * so on disk there is only the player's, and the keys the pack sets for mods the player did not have before (Móvil →
+     * Móvil PRO: Xaero's map on N) never arrived (Felix 12-11: the «Pokémon» button, M, opened the map).
      */
-    private fun mergeOptions(f: File, player: Map<String, String>) {
-        val fromPack = readOptions(f) ?: LinkedHashMap()
+    private fun mergeOptions(f: File, player: Map<String, String>, pack: Map<String, String>) {
+        val fromPack = LinkedHashMap(readOptions(f) ?: LinkedHashMap())
+        for ((k, line) in pack) fromPack[k] = line
         for ((k, line) in player) if (k !in PACK_OPTION_KEYS) fromPack[k] = line
         f.writeText(fromPack.values.joinToString("\n", postfix = "\n"), StandardCharsets.UTF_8)
+    }
+
+    private const val TECLA_MAPA = "key_gui.xaero_open_map"
+    private const val TECLA_POKEMON = "key_key.cobblemon.summary"
+
+    /**
+     * Before every game: Xaero's world map opens with M unless options.txt says otherwise, the same key as Cobblemon's
+     * Pokémon menu and our «Pokémon» touch button, and the map wins. With no line for the map, or the map on the Pokémon
+     * key, the map goes to N (the key the PC packs give it). Any other key the player chose stays. Without Xaero the
+     * game drops the line by itself.
+     */
+    internal fun teclaDelMapa(opciones: File) {
+        if (!opciones.isFile) return
+        val pokemon = ScAuto.leer(opciones, TECLA_POKEMON) ?: "key.keyboard.m"
+        val mapa = ScAuto.leer(opciones, TECLA_MAPA)
+        if (mapa != null && mapa != pokemon) return
+        if (pokemon == "key.keyboard.n") return
+        ScAuto.opcion(opciones, TECLA_MAPA, "key.keyboard.n")
     }
 
     private fun fetchManifest(url: String, debugUrl: String?): Manifest {

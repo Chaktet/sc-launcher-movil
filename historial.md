@@ -21,7 +21,9 @@
   medido (md5 9e35cc94). Cloudflare: manifiesto sin caché = 6bff8afd; los 3 módulos con tamaño 95695 y md5 OK.
   Cron 21:13Z sin ERROR: .mrpack 1.1.130 (APTO ×3), SC-Mods 1.1.46 / LITE 1.1.46 / Menús 1.0.45 y **Móvil PRO
   2.4.55-1.1.130-r9**; descargados por Cloudflare, los 4 llevan un solo sc-memoria, la 1.9.0. Móvil PRO pasa así de 1.7.0
-  a 1.9.0 (lectura adelantada con max(1, núcleos/4) hilos: sin probar en un móvil real). Novedad: sin publicar.
+  a 1.9.0 (lectura adelantada con max(1, núcleos/4) hilos: sin probar en un móvil real). Novedad «El juego arranca
+  más rápido en PC» publicada en el launcher tras OK de Felix (id 2026-11-12-modpack-El-juego-arranca-mas-rapido-en-PC);
+  Discord pendiente (2 de 4 entradas).
 - **12-11 · Arranque en PC: sc-memoria-cliente 1.9.0 CONSTRUIDA Y MEDIDA (−19 s)** (Felix OK a pasos 2 y 3; rama
   `perf/fancymenu-lectura-adelantada` 27f0e93, worktree `E:/PROYECTOS-MC/sc-memoria-cliente-fancy`, plan en su
   `docs/PLAN-ARRANQUE-PC.md`). 1.9.0 = 1.8.0 (Pokémon bajo demanda) + lectura adelantada de los 5.763 layouts de

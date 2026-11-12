@@ -1,13 +1,26 @@
 # Historial · SC Launcher Móvil
 
 ## Estado actual
-- **12-11 · Arranque rápido: fases 0, 2a, 1a y 1b construidas, 1c descartada** (`docs/PLAN-ARRANQUE-RAPIDO.md`, «Status»).
-  App **0.1.25** (code 26) SIN publicar (el cron sigue pausado). 1a = rama `perf/pantallas-rapido` de sc-menus-cliente,
-  1b = sc-memoria-cliente 1.7.0 en la rama `perf/showdown-sin-esperar`: ninguna está en un modpack. 1b PROBADA 12-11 en el
-  cliente de pruebas (mundo individual): el hilo principal no espera, Showdown arranca en paralelo, el servidor integrado
-  carga 1025 especies y un combate salvaje abre «Elige una acción»; multijugador no probado (el cliente no usa Showdown ahí).
-  **Felix 12-11: publicar 0.1.25 (cron sigue pausado) y sacar un pack móvil nuevo con 1a+1b.** Relevo:
-  E:/tmp/relevos/2026-11-12-publicar-arranque-rapido.md. Luego, en 2 días, leer SC-47 por `g` con las claves nuevas.
+- **12-11 · Arranque rápido PUBLICADO:** app **0.1.25** (code 26) en vivo y modpack **Móvil 2.4.50** / Lite
+  2.4.50-lite-r2 con sc-menus-cliente **1.8.2** (1a) y sc-memoria-cliente **1.7.0** (1b). Móvil PRO 2.4.50-1.1.125-r9
+  sigue con los jars de PC (1.8.1 / 1.6.0): le llegan cuando salgan en el pack de PC. Novedad: Felix dijo «No se publica
+  esto» (vista previa 1570471756148252764 en diseño-pruebas, sin publicar).
+- **El cron de `app_movil.js` está ACTIVO** (crontab de OVH-A, sin `#PAUSADO`): publicó la 0.1.24 sola el 08-11 y la
+  0.1.25 el 12-11. Una etiqueta `vX.Y.Z` = publicación a todos en cuanto la CI pasa.
+- Pendiente: en 2 días leer SC-47 por `g` con las claves nuevas (`k`, `d`, `h`, `s`) y comparar con antes del 12-11.
+
+## 2026-11-12 · Publicado: app 0.1.25 + Móvil 2.4.50 (Felix: «Publicar 0.1.25», «Pack móvil nuevo ya»)
+- App: etiqueta `v0.1.25` en 794306a5 → run 43255220455 verde (compilaciones + emulador + release) → `app_movil.js`
+  la publicó a las 16:38Z. Los 3 APK por Cloudflare: tamaño y sha256 = `sc-app.json`.
+- Mods: sc-menus-cliente 1.8.2 = rama `perf/pantallas-rapido` + bump (a14aa7d; 1.9.x ya lo usan otras ramas sin
+  publicar, que NO llevan el 1a hasta que se fusione). sc-memoria-cliente 1.7.0 = `perf/showdown-sin-esperar` 9b72653
+  (incluye 1.4-1.6, ya en el pack de PC). Jars en `descargas-auto/mods-movil/`.
+- Prueba antes de publicar: nueva entrada `pack_prueba` de la CI (0f469cb0): el emulador instala un `sc-pack.json` sin
+  publicar. Run 43256007283 con 2.4.49 + los 2 jars: todo OK; «[SC Memoria] Showdown starts in the background», «[SC Menus]
+  screens v171 up to date (… 6888 files checked in 9.1 s)», sello `rapido.txt` escrito. La 2ª partida (quick check) no
+  se prueba en la CI: juego y app comparten proceso; queda cubierta por SyncerTest y la prueba local.
+- Publicación: `auto_descargas.js --rehacer-movil --mod-movil …` (ensayo `--prueba` antes) → Móvil 2.4.50, Lite, PRO.
+  Por Cloudflare: los 3 manifiestos con tamaño y sha256 correctos; Móvil y Lite llevan 1.8.2 + 1.7.0.
 
 ## 2026-11-12 · Arranque rápido del móvil, fases 0 + 2a + 1a + 1b (sesión hija, Felix: «que no tarde tantísimo»)
 - Codex revisó el plan (10 hallazgos, todos aplicados). El más serio: `a`/`r`/`p` chocaban con claves fijas de ScAvisos.

@@ -15,6 +15,7 @@
 - **12-11 · App 0.1.26 PUBLICADA** (code 27, 20:42Z): en Móvil PRO el botón «Pokémon» (M) abría el mapa de Xaero; ahora las teclas del
   .mrpack llegan al cambiar de perfil y el mapa pasa a N. Emulador completo 49 OK; los 3 APK por Cloudflare OK. Sin móvil real.
 - **12-11 · Arranque en PC: sc-memoria-cliente 1.9.0 CONSTRUIDA, nada publicado** (Felix OK a pasos 2 y 3; rama
+- **12-11 · Arranque en PC: sc-memoria-cliente 1.9.0 CONSTRUIDA Y MEDIDA (−19 s), nada publicado** (Felix OK a pasos 2 y 3; rama
   `perf/fancymenu-lectura-adelantada` 27f0e93, worktree `E:/PROYECTOS-MC/sc-memoria-cliente-fancy`, plan en su
   `docs/PLAN-ARRANQUE-PC.md`). 1.9.0 = 1.8.0 (Pokémon bajo demanda) + lectura adelantada de los 5.763 layouts de
   FancyMenu (111 MB) en 4 hilos desde el entrypoint `client`; cada fichero se usa solo si sus bytes no cambiaron
@@ -23,9 +24,20 @@
   ronda 2 «Sin hallazgos». Huella de todos los layouts on/off idéntica, también con un fichero cambiado a mitad.
   Medido (copia `E:/tmp/arranque-pc/`, CPU NO libre, alternado): 1.7.0→1.8.0 total 72-84 → 52-68 s (Cobblemon 20-23 → 1 s);
   1.8.0→1.9.0 a 13-19 % CPU 36 → 33 s, a 45-55 % 50 → 42 s; `LayoutHandler.init` 2,8-5,6 s; con -Xmx2G (SUPER LITE)
-  pico de heap igual (1,02 GB), pausas GC +0,4 s en total. **Falta:** 3+3 arranques con CPU libre (Felix avisa
-  cuando cierre los otros juegos) para la tabla final; prueba en mundo (5 especies, F3+T) en PC; publicar en
-  PRO/LITE/SUPER LITE solo con su OK (método `E:/tmp/arranque-rapido/pc/`). Paso 4 (Fabric/AppCDS) sin empezar.
+  pico de heap igual (1,02 GB), pausas GC +0,4 s en total.
+  **Tabla final (12-11 16:11-16:22 RD, Felix «ya está libre»; quedaban 2 javaw de Modrinth ≈ 3 de 32 núcleos, carga
+  13-62 %; alternado 1.7.0 = lo que lleva PC hoy / 1.9.0; `med/runfin-*`):**
+  | s | 1.7.0 #1/#2/#3 | 1.9.0 #1/#2/#3 |
+  |---|---|---|
+  | total hasta el título | 59 / 57 / 61 | **40 / 38 / 42** |
+  | JVM+Fabric+init → Reloading | 25 / 21 / 25 | 22 / 22 / 25 |
+  | hueco Reloading → Drippy | 13 / 15 / 16 | 11 / 10 / 10 |
+  | Cobblemon assets | 16 / 15 / 15 | 1 / 1 / 1 |
+  ≈ −19 s (−32 %); mismos ERROR en cada pareja (10/11/10); `LayoutHandler.init` 2,9-3,6 s, 0-2 ficheros leídos por
+  FancyMenu. En mundo (1.9.0, mundo fase3): 6 especies con /pokespawn, recarga de recursos (como F3+T, Cobblemon 0,5 s)
+  y una especie nueva: todas se ven (`inst/screenshots/mundo19_b.png`). **Falta:** publicar en PRO/LITE/SUPER LITE
+  solo con OK de Felix (método `E:/tmp/arranque-rapido/pc/`; antes Codex del diff contra la 1.7.0 publicada no hace
+  falta: no es plugin de servidor). Paso 4 (Fabric/AppCDS) sin empezar; techo estimado ~8 s.
 - **12-11 · Arranque en PC MEDIDO (solo medición, nada publicado).** 3 arranques en copia propia del cliente
   (`E:/tmp/arranque-pc/`: mods del perfil de Felix sin lockserver + sc-memoria 1.7.0, sc-avisos 1.7.0, sc-menus 1.9.0,
   SC-Pack de Felix, hasta el título, JFR `settings=profile` desde el JVM; ficheros `med/run{1,2,3}.{jfr,log}`,

@@ -20,6 +20,8 @@
   lo llevaba. `QUITAR_MOVIL` += `/^TooManyPlayers-/i` (`auto_descargas.js` md5 146e6b99, copia en OVH-A
   `auto_descargas.js.bak-toomany-20261112`), `--rehacer-movil` → 2.4.52. Cloudflare: los 3 manifiestos con tamaño y
   sha256 OK y 0 rastros del mod. Emulador (run 43266549235) con el 2.4.52: instala y el juego sigue a los 60 s. **Sin ver en un móvil real** que la mano vuelva (el emulador no llega a dibujar el juego).
+- **12-11 · Móvil 2.4.54 / Lite / PRO con sc-avisos-cliente 1.7.0** (también en PC): una página web como motivo de
+  desconexión sale como texto en español (detalle en sc-avisos-cliente/historial.md). Cloudflare OK en los 3.
 - **El cron de `app_movil.js` está ACTIVO** (crontab de OVH-A, sin `#PAUSADO`): publicó la 0.1.24 sola el 08-11 y la
   0.1.25 el 12-11. Una etiqueta `vX.Y.Z` = publicación a todos en cuanto la CI pasa.
 - Por SSH en dos saltos (Hetzner → OVH-A), las comillas anidadas se rompen sin avisar: copiar un script y ejecutarlo

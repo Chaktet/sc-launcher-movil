@@ -8,9 +8,12 @@
   pasa el mapa a N si no tiene tecla o comparte la de «Pokémon» (otra tecla elegida por el jugador se respeta).
 - Comprobado: cliente de PC con los mods del PRO y el `options.txt` del Móvil 2.4.55: sin arreglo M abre el mapa; con él M abre
   Cobblemon y N el mapa. Prueba completa del emulador (run 43287974931): 49 OK, 0 FAIL, con los 3 casos nuevos de la tecla.
-- Sin ver en un móvil real.
+- Publicado: etiqueta `v0.1.26` (40abb743) → run 43297838379 verde → `sc-app.json` 0.1.26 a las 20:42Z; los 3 APK por Cloudflare
+  con tamaño y sha256 = manifiesto. Sin ver en un móvil real.
 
 ## Estado actual
+- **12-11 · App 0.1.26 PUBLICADA** (code 27, 20:42Z): en Móvil PRO el botón «Pokémon» (M) abría el mapa de Xaero; ahora las teclas del
+  .mrpack llegan al cambiar de perfil y el mapa pasa a N. Emulador completo 49 OK; los 3 APK por Cloudflare OK. Sin móvil real.
 - **12-11 · Fase 3 (Pokémon bajo demanda) LISTA, sin publicar:** sc-memoria-cliente **1.8.0**, rama
   `perf/pokemon-bajo-demanda` (worktree `E:/PROYECTOS-MC/sc-memoria-cliente-pokemon`, sobre la 1.7.0, último commit
   `7854bd2`). Codex «Sin hallazgos» en la ronda 3 de cierre del diff. **Felix (12-11): «Al próximo pack Móvil»**: el

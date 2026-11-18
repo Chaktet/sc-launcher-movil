@@ -1,5 +1,19 @@
 # Historial · SC Launcher Móvil
 
+## 2026-11-17 · Login Microsoft con NUESTRA app de Entra (Mojang la aprobó; 0.1.27 construida, SIN publicar)
+- Felix recibió el correo de Mojang Enforcement (lote aprobado para la allow list; el correo no dice el appID).
+- Comprobado que es la nuestra: con `b02d1916-762f-4732-ad9e-f10fc0a71fe9`, código de dispositivo + Felix en
+  microsoft.com/link → token Microsoft OK → Xbox Live 200 → XSTS 200 → `login_with_xbox` **200** → perfil 200 (ChaktetZz).
+  Script `E:/tmp/ms-login/cadena.mjs` (no imprime tokens). La página de login con `nativeclient` + PKCE también la acepta.
+- Cambiado: secreto `OAUTH_API_KEY` = nuestro ID (18-11 00:49Z); pruebas de CI (`sc-smoke.sh`, `sc-ui-check.mjs`) esperan
+  el ID nuevo; CLAUDE.md y comentario de `ScMicrosoft.kt`; versión **0.1.27** (code 28). Commit 3d418390.
+- CI run 44211025497 verde: 3 APK firmados con nuestra clave; emulador OK, la ventana pide nuestro client ID. («Check Codes»
+  falla igual que antes: checkstyle en ficheros heredados de FCL.)
+- Efecto en jugadores: el refresh token del ID de Helios no vale con el nuestro → FCL muestra una vez «vuelve a iniciar
+  sesión» (`TipReLoginLoginDialog`). Sin ver en un móvil real.
+- Pendiente: publicar 0.1.27 (etiqueta `v0.1.27` en 3d418390) solo con OK de Felix; PC sigue con el ID de Helios
+  (`sc-launcher/app/assets/js/ipcconstants.js:4`); actualizar `sc-launcher/docs/PLAN-APP-ANDROID.md` (otra sesión en ese repo).
+
 ## 2026-11-12 · App 0.1.26: el botón «Pokémon» del Móvil PRO abría el mapa de Xaero (Felix: «Cuando pase la prueba, publica la app 0.1.26»)
 - Causa: el botón táctil «Pokémon» manda M; en PRO el mapa mundial de Xaero, sin línea en `options.txt`, viene en M y gana a
   Cobblemon. El PRO trae `key_gui.xaero_open_map:key.keyboard.n`, pero al pasar de Móvil a PRO FCL no pisa el `options.txt`
@@ -12,6 +26,8 @@
   con tamaño y sha256 = manifiesto. Sin ver en un móvil real.
 
 ## Estado actual
+- **17-11 · Login Microsoft con nuestra app `b02d1916…` (aprobada por Mojang, cadena hasta `login_with_xbox` 200).**
+  App **0.1.27** (code 28, commit 3d418390) construida y probada en CI, **sin publicar**: falta OK de Felix. PC sigue con Helios.
 - **12-11 · App 0.1.26 PUBLICADA** (code 27, 20:42Z): en Móvil PRO el botón «Pokémon» (M) abría el mapa de Xaero; ahora las teclas del
   .mrpack llegan al cambiar de perfil y el mapa pasa a N. Emulador completo 49 OK; los 3 APK por Cloudflare OK. Sin móvil real.
 - **12-11 · sc-memoria-cliente 1.9.0 PUBLICADA en PC (PRO/LITE/SUPER LITE)** (Felix «Sí, publícala»): manifiesto
@@ -157,7 +173,7 @@
   etiqueta `vX.Y.Z` en ese commit, APK de los artefactos de ese run a `movil/app/` con nombre nuevo, `sc-app.json` al
   final, comprobar por Cloudflare. Los cambios del modpack NO necesitan versión de la app.
 - NO comprobado aún: login Microsoft real, Móvil PRO en un móvil real, los menús «rotos» del S25 (esperando capturas).
-- Microsoft: app propia `b02d1916-762f-4732-ad9e-f10fc0a71fe9` pendiente de Mojang; al aprobarse, cambiar `OAUTH_API_KEY`.
+- Microsoft: app propia `b02d1916-762f-4732-ad9e-f10fc0a71fe9` aprobada por Mojang el 17-11; `OAUTH_API_KEY` ya cambiado (0.1.27).
 - Pendiente 0.1.21: en 1-2 días leer en stats.json los SC-40 (ahora con `k`/`f`/`h`) y los SC-47 (arranque lento,
   Redmi 13C = `23100RN82L`) y decidir el arreglo; si los SC-40 apuntan a cdn.modrinth.com, espejo en nuestro servidor
   como 2ª URL en `movil_auto.js`. Un móvil flojo con PRO elegido a mano nunca baja solo a Lite (1 FPS visto): proponer aviso.

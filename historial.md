@@ -1,6 +1,6 @@
 # Historial · SC Launcher Móvil
 
-## 2026-11-17 · Login Microsoft con NUESTRA app de Entra (Mojang la aprobó; 0.1.27 construida, SIN publicar)
+## 2026-11-17 · Login Microsoft con NUESTRA app de Entra (Mojang la aprobó; app 0.1.27 PUBLICADA)
 - Felix recibió el correo de Mojang Enforcement (lote aprobado para la allow list; el correo no dice el appID).
 - Comprobado que es la nuestra: con `b02d1916-762f-4732-ad9e-f10fc0a71fe9`, código de dispositivo + Felix en
   microsoft.com/link → token Microsoft OK → Xbox Live 200 → XSTS 200 → `login_with_xbox` **200** → perfil 200 (ChaktetZz).
@@ -11,7 +11,11 @@
   falla igual que antes: checkstyle en ficheros heredados de FCL.)
 - Efecto en jugadores: el refresh token del ID de Helios no vale con el nuestro → FCL muestra una vez «vuelve a iniciar
   sesión» (`TipReLoginLoginDialog`). Sin ver en un móvil real.
-- Pendiente: publicar 0.1.27 (etiqueta `v0.1.27` en 3d418390) solo con OK de Felix; PC sigue con el ID de Helios
+- Publicado (Felix «Sí, publícala»): etiqueta `v0.1.27` en 3d418390. Su run 44215651982 falló 2 veces solo en el control
+  intermitente «SC-47 carries the start phases» (la 0.1.26 también falló ahí una vez); Felix eligió «con los APK verdes»: release
+  creada a mano con los APK de la build de main del mismo commit (44211025497, firma ed158ccb… en los 3, ID nuevo dentro).
+  Cron → `sc-app.json` 0.1.27 (code 28); los 3 APK por Cloudflare con tamaño y sha256 = manifiesto.
+- Pendiente: ese control SC-47 es inestable en el emulador (arreglarlo o relajarlo); login real en un móvil; PC sigue con el ID de Helios
   (`sc-launcher/app/assets/js/ipcconstants.js:4`); actualizar `sc-launcher/docs/PLAN-APP-ANDROID.md` (otra sesión en ese repo).
 
 ## 2026-11-12 · App 0.1.26: el botón «Pokémon» del Móvil PRO abría el mapa de Xaero (Felix: «Cuando pase la prueba, publica la app 0.1.26»)
@@ -27,7 +31,7 @@
 
 ## Estado actual
 - **17-11 · Login Microsoft con nuestra app `b02d1916…` (aprobada por Mojang, cadena hasta `login_with_xbox` 200).**
-  App **0.1.27** (code 28, commit 3d418390) construida y probada en CI, **sin publicar**: falta OK de Felix. PC sigue con Helios.
+  App **0.1.27** (code 28, commit 3d418390) **PUBLICADA** 18-11 ~02:40Z, APK OK por Cloudflare. Sin móvil real. PC sigue con Helios.
 - **12-11 · App 0.1.26 PUBLICADA** (code 27, 20:42Z): en Móvil PRO el botón «Pokémon» (M) abría el mapa de Xaero; ahora las teclas del
   .mrpack llegan al cambiar de perfil y el mapa pasa a N. Emulador completo 49 OK; los 3 APK por Cloudflare OK. Sin móvil real.
 - **12-11 · sc-memoria-cliente 1.9.0 PUBLICADA en PC (PRO/LITE/SUPER LITE)** (Felix «Sí, publícala»): manifiesto

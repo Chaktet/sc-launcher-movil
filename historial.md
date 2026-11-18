@@ -14,8 +14,6 @@
 ## Estado actual
 - **12-11 · App 0.1.26 PUBLICADA** (code 27, 20:42Z): en Móvil PRO el botón «Pokémon» (M) abría el mapa de Xaero; ahora las teclas del
   .mrpack llegan al cambiar de perfil y el mapa pasa a N. Emulador completo 49 OK; los 3 APK por Cloudflare OK. Sin móvil real.
-- **12-11 · Arranque en PC: sc-memoria-cliente 1.9.0 CONSTRUIDA, nada publicado** (Felix OK a pasos 2 y 3; rama
-- **12-11 · Arranque en PC: sc-memoria-cliente 1.9.0 CONSTRUIDA Y MEDIDA (−19 s), nada publicado** (Felix OK a pasos 2 y 3; rama
 - **12-11 · sc-memoria-cliente 1.9.0 PUBLICADA en PC (PRO/LITE/SUPER LITE)** (Felix «Sí, publícala»): manifiesto
   `6bff8afd` (antes a537175e, copia `launcher/_backup-arranque-pc-20261112-211013/`), sustituye a la 1.7.0, mismo jar
   medido (md5 9e35cc94). Cloudflare: manifiesto sin caché = 6bff8afd; los 3 módulos con tamaño 95695 y md5 OK.

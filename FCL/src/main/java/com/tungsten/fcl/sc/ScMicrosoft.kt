@@ -37,8 +37,9 @@ import java.util.concurrent.TimeoutException
 /**
  * SC: Microsoft sign-in with the authorization code in an in-app window (PLAN-APP-ANDROID.md, phase 4).
  *
- * The Entra app we use today is the desktop launcher's (Helios' client ID, OAUTH_API_KEY). It does not allow FCL's
- * device code flow (AADSTS70002), only the code flow with Microsoft's own "nativeclient" redirect. This window loads
+ * The Entra app is our own «SC Launcher» (OAUTH_API_KEY, on Mojang's allow list since 2026-11-17). Builds up to 0.1.25
+ * used Helios' client ID, which does not allow FCL's device code flow (AADSTS70002), so we keep the code flow with
+ * Microsoft's own "nativeclient" redirect, which both apps accept. This window loads
  * the authorize page and catches that redirect; the attempt is bound to its window with `state` and PKCE (S256), so a
  * code that was not issued for this attempt is refused. FCL's MicrosoftService then does Xbox Live, XSTS and the
  * Minecraft profile, and later refreshes the token with the usual v2.0 endpoint (same client, public).

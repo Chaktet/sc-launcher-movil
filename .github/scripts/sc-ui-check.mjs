@@ -90,7 +90,7 @@ shot('ui-1b-microsoft')
 adbVive('opening the Microsoft window')
 const params = ventana ? JSON.parse(await evalEn(ventana, 'JSON.stringify(window.scCi || {})')) : {}
 comprueba(!!ventana, '«Cuenta Microsoft» opens the sign-in window')
-comprueba(params.client === '1ce6e35a-126f-48fd-97fb-54d143ac6d45' && params.redirect === 'https://login.microsoftonline.com/common/oauth2/nativeclient' &&
+comprueba(params.client === 'b02d1916-762f-4732-ad9e-f10fc0a71fe9' && params.redirect === 'https://login.microsoftonline.com/common/oauth2/nativeclient' &&
   params.method === 'S256' && (params.challenge || '').length >= 43 && (params.state || '').length >= 20,
   `it asks with our client ID, the nativeclient redirect, PKCE S256 and a state (${JSON.stringify(params).slice(0, 200)})`)
 execFileSync('adb', ['shell', 'input', 'keyevent', 'KEYCODE_BACK'], { timeout: 30000 })

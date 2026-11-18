@@ -23,9 +23,9 @@
   public in this repo; every published APK must match a tagged commit here.
 - **Upstream merges:** our code lives in `Sc*` classes/files (package `es.servidorcobblemon.movil` or `com.tungsten.fcl.sc`),
   inherited FCL code is touched as little as possible so `git merge upstream/main` stays easy.
-- **Microsoft login:** `OAUTH_API_KEY` secret = Entra client ID. Today Helios's `1ce6e35a-126f-48fd-97fb-54d143ac6d45`
-  (same as the desktop launcher); switch when our own Entra app gets Minecraft API access (client ID recorded in the
-  plan doc and historial).
+- **Microsoft login:** `OAUTH_API_KEY` secret = Entra client ID = our own app «SC Launcher»
+  `b02d1916-762f-4732-ad9e-f10fc0a71fe9` (personal accounts, public client, `nativeclient` redirect; Mojang allow list
+  approved 2026-11-17). App builds up to 0.1.25 used Helios's `1ce6e35a-…` (still the desktop launcher's ID).
 - **Distribution only from our website** (`descargas.servidorcobblemon.es`), never Google Play. Do not publish the app on
   the web guide `/como-jugar/movil` until the real-phone test (phase 6) passed and Felix says so.
 - Screens: Codex designs (concept images), Felix approves, Claude builds (global CLAUDE.md, «Roles»).

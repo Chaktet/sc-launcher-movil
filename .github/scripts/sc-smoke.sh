@@ -95,7 +95,7 @@ adb shell appops set "$PKG" REQUEST_INSTALL_PACKAGES allow
 cp .github/scripts/fake-authorize.html packci/
 # Microsoft's real sign-in page for the app's exact request (client ID, nativeclient redirect, PKCE), checked from the
 # runner because the emulator cannot draw it: it must answer with the sign-in form, not an AADSTS error.
-MS_URL="https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?client_id=1ce6e35a-126f-48fd-97fb-54d143ac6d45&response_type=code&redirect_uri=https%3A%2F%2Flogin.microsoftonline.com%2Fcommon%2Foauth2%2Fnativeclient&scope=XboxLive.signin%20offline_access&prompt=select_account&state=ci$RANDOM$RANDOM&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256"
+MS_URL="https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?client_id=b02d1916-762f-4732-ad9e-f10fc0a71fe9&response_type=code&redirect_uri=https%3A%2F%2Flogin.microsoftonline.com%2Fcommon%2Foauth2%2Fnativeclient&scope=XboxLive.signin%20offline_access&prompt=select_account&state=ci$RANDOM$RANDOM&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256"
 MS_CODE=$(curl -sL -A "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36" -o evidence/microsoft-authorize.html -w '%{http_code} %{url_effective}' "$MS_URL")
 echo "Microsoft authorize: $MS_CODE" | tee -a evidence/apk.txt
 # Accepted = HTTP 200 on Microsoft's consumer sign-in form (login.live.com/oauth20_authorize.srf) and no AADSTS error
